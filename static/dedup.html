@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>拾光 · 去重</title>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #111;
+  --surface: #1a1a1a;
+  --surface-hover: #222;
+  --border: #2a2a2a;
+  --border-active: #444;
+  --text: rgba(255,255,255,0.85);
+  --text-dim: rgba(255,255,255,0.5);
+  --text-faint: rgba(255,255,255,0.3);
+  --accent: #a08c6a;
+  --accent-dim: rgba(160,140,106,0.15);
+  --danger: #c0564f;
+  --success: #5fa07a;
+  --radius: 6px;
+  --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --sans: 'Noto Sans SC', -apple-system, 'PingFang SC', sans-serif;
+}
+
+html { font-size: 14px; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.12) transparent; }
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); }
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 2rem;
+  line-height: 1.6;
+}
+
+/* ─── 头部 ─── */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+header h1 { font-size: 1.2rem; font-weight: 400; letter-spacing: 0.1em; }
+header .links a { color: var(--text-dim); text-decoration: none; font-size: 0.75rem; margin-left: 1rem; transition: color 0.3s; }
+header .links a:hover { color: var(--text); }
+
+/* ─── 统计 ─── */
+.summary {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-bottom: 2rem;
+  letter-spacing: 0.03em;
+}
+
+/* ─── 系列分组 ─── */
+.series-section { margin-bottom: 2.5rem; }
+.series-section h2 {
+  font-size: 0.85rem;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ─── 重复组 ─── */
+.dup-group {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.2rem;
+  margin-bottom: 1rem;
+  transition: border-color 0.3s;
+}
+.dup-group.resolved {
+  opacity: 0.4;
+  pointer-events: none;
+  border-color: var(--success);
+}
+.dup-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.8rem;
+}
+.dup-group-header .dup-label {
+  font-size: 0.7rem;
+  color: var(--text-faint);
+  letter-spacing: 0.05em;
+}
+.dup-group-header .dup-exif {
+  font-size: 0.65rem;
+  color: var(--text-faint);
+}
+
+.dup-items {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.dup-item {
+  position: relative;
+  border: 2px solid transparent;
+  border-radius: var(--radius);
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.3s, transform 0.2s var(--ease);
+  flex: 0 0 auto;
+}
+.dup-item:hover { transform: translateY(-2px); }
+.dup-item.selected { border-color: var(--accent); }
+.dup-item.selected::after {
+  content: '保留';
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  font-size: 0.6rem;
+  background: var(--accent);
+  color: #111;
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  letter-spacing: 0.05em;
+}
+
+.dup-item img {
+  display: block;
+  height: 140px;
+  width: auto;
+  max-width: 220px;
+  object-fit: cover;
+}
+.dup-item .item-info {
+  padding: 0.5rem 0.6rem;
+  background: var(--surface);
+}
+.dup-item .item-title {
+  font-size: 0.72rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+.dup-item .item-meta {
+  font-size: 0.6rem;
+  color: var(--text-faint);
+  margin-top: 0.15rem;
+}
+
+/* ─── 操作按钮 ─── */
+.dup-actions {
+  margin-top: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+.btn-delete-others {
+  font-size: 0.7rem;
+  padding: 0.35rem 0.8rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--danger);
+  background: transparent;
+  color: var(--danger);
+  cursor: pointer;
+  transition: background 0.3s, color 0.3s;
+  letter-spacing: 0.03em;
+}
+.btn-delete-others:hover { background: var(--danger); color: #fff; }
+.btn-delete-others:disabled { opacity: 0.3; cursor: default; }
+.btn-delete-others:disabled:hover { background: transparent; color: var(--danger); }
+.dup-hint { font-size: 0.65rem; color: var(--text-faint); }
+
+/* ─── 空状态 ─── */
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-faint);
+}
+.empty-state .icon { font-size: 2rem; margin-bottom: 1rem; opacity: 0.4; }
+.empty-state p { font-size: 0.85rem; letter-spacing: 0.05em; }
+
+/* ─── 加载 ─── */
+.loading {
+  text-align: center;
+  padding: 4rem;
+  color: var(--text-faint);
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+}
+
+/* ─── 底部批量操作栏 ─── */
+#batch-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.9rem 2rem;
+  background: rgba(17, 17, 17, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border);
+}
+#batch-bar.visible { display: flex; }
+#batch-bar .batch-info { font-size: 0.72rem; color: var(--text-dim); }
+#batch-bar .btn-batch {
+  font-size: 0.72rem;
+  padding: 0.4rem 1.2rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--danger);
+  background: var(--danger);
+  color: #fff;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  transition: opacity 0.3s;
+}
+#batch-bar .btn-batch:hover { opacity: 0.85; }
+#batch-bar .btn-batch:disabled { opacity: 0.3; cursor: default; }
+
+/* ─── 自定义确认弹窗 ─── */
+#confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+}
+#confirm-overlay.show { opacity: 1; visibility: visible; }
+#confirm-panel {
+  background: rgba(30, 30, 30, 0.65);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.8rem 2rem;
+  max-width: 360px;
+  width: 90%;
+  text-align: center;
+  transform: scale(0.95);
+  transition: transform 0.25s var(--ease);
+}
+#confirm-overlay.show #confirm-panel { transform: scale(1); }
+#confirm-panel .confirm-msg {
+  font-size: 0.82rem;
+  color: var(--text);
+  margin-bottom: 1.4rem;
+  line-height: 1.6;
+}
+#confirm-panel .confirm-actions {
+  display: flex;
+  gap: 0.8rem;
+  justify-content: center;
+}
+#confirm-panel .confirm-actions button {
+  font-size: 0.72rem;
+  padding: 0.4rem 1.2rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-family: var(--sans);
+  letter-spacing: 0.03em;
+  transition: opacity 0.3s, background 0.3s;
+}
+#confirm-cancel {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+}
+#confirm-cancel:hover { border-color: var(--border-active); color: var(--text); }
+#confirm-ok {
+  border: 1px solid var(--danger);
+  background: var(--danger);
+  color: #fff;
+}
+#confirm-ok:hover { opacity: 0.85; }
+
+/* ─── 底部提示 ─── */
+#toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  z-index: 300;
+  padding: 0.6rem 1.4rem;
+  border-radius: var(--radius);
+  background: rgba(30, 30, 30, 0.75);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid var(--border);
+  font-size: 0.75rem;
+  color: var(--text);
+  letter-spacing: 0.03em;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s, transform 0.3s var(--ease), visibility 0.3s;
+  pointer-events: none;
+}
+#toast.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>拾光 · 照片去重</h1>
+  <div class="links">
+    <a href="/admin">← 返回管理</a>
+    <a href="/gallery">查看画廊 →</a>
+  </div>
+</header>
+
+<div id="content">
+  <p class="loading">正在检测重复照片…</p>
+</div>
+
+<div id="toast"></div>
+
+<div id="confirm-overlay">
+  <div id="confirm-panel">
+    <p class="confirm-msg"></p>
+    <div class="confirm-actions">
+      <button id="confirm-cancel">取消</button>
+      <button id="confirm-ok">确认删除</button>
+    </div>
+  </div>
+</div>
+
+<div id="batch-bar">
+  <span class="batch-info"></span>
+  <button class="btn-batch" disabled onclick="batchDelete()">一键清理</button>
+</div>
+
+<script>
+const content = document.getElementById('content');
+
+/* 自定义确认弹窗 */
+function showConfirm(msg) {
+  return new Promise(resolve => {
+    const overlay = document.getElementById('confirm-overlay');
+    overlay.querySelector('.confirm-msg').textContent = msg;
+    overlay.classList.add('show');
+    const ok = document.getElementById('confirm-ok');
+    const cancel = document.getElementById('confirm-cancel');
+    function cleanup(result) {
+      overlay.classList.remove('show');
+      ok.removeEventListener('click', onOk);
+      cancel.removeEventListener('click', onCancel);
+      resolve(result);
+    }
+    function onOk() { cleanup(true); }
+    function onCancel() { cleanup(false); }
+    ok.addEventListener('click', onOk);
+    cancel.addEventListener('click', onCancel);
+  });
+}
+
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+async function init() {
+  let data;
+  try {
+    const res = await fetch('/api/duplicates');
+    data = await res.json();
+  } catch (e) {
+    content.innerHTML = '<div class="empty-state"><p>加载失败，请刷新重试</p></div>';
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    content.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">✓</div>
+        <p>没有发现重复照片</p>
+      </div>`;
+    return;
+  }
+
+  const totalGroups = data.reduce((s, d) => s + d.groups.length, 0);
+  const totalDupes = data.reduce((s, d) => s + d.groups.reduce((g, grp) => g + grp.length - 1, 0), 0);
+
+  let html = `<p class="summary">发现 ${totalGroups} 组重复，共 ${totalDupes} 张可清理。点击选择每组中要保留的照片。</p>`;
+
+  data.forEach(section => {
+    html += `<div class="series-section"><h2>${section.series_name}</h2>`;
+    section.groups.forEach((group, gi) => {
+      const exif = group[0].exif || {};
+      const exifStr = [exif.camera, exif.focal_length, exif.aperture, exif.shutter_speed, exif.iso].filter(Boolean).join('  ·  ');
+      const dims = exif.width && exif.height ? `${exif.width}×${exif.height}` : '';
+      const groupId = `${section.series}-${gi}`;
+
+      html += `<div class="dup-group" id="group-${groupId}">`;
+      html += `<div class="dup-group-header">
+        <span class="dup-label">${group.length} 张重复</span>
+        <span class="dup-exif">${exifStr}${dims ? '  ·  ' + dims : ''}</span>
+      </div>`;
+      html += `<div class="dup-items">`;
+      group.forEach(photo => {
+        const src = photo.thumb ? '/assets/thumbs/' + photo.thumb : '/assets/' + photo.filename;
+        const size = '';
+        html += `<div class="dup-item" data-id="${photo.id}" data-group="${groupId}" onclick="selectItem(this)">
+          <img src="${src}" alt="${photo.title}" loading="lazy">
+          <div class="item-info">
+            <div class="item-title">${photo.title || photo.original_name}</div>
+            <div class="item-meta">${photo.date_taken || ''}</div>
+          </div>
+        </div>`;
+      });
+      html += `</div>`;
+      html += `<div class="dup-actions">
+        <button class="btn-delete-others" data-group="${groupId}" disabled onclick="deleteOthers('${groupId}')">删除其余</button>
+        <span class="dup-hint">先点选要保留的一张</span>
+      </div>`;
+      html += `</div>`;
+    });
+    html += `</div>`;
+  });
+
+  content.innerHTML = html;
+}
+
+function selectItem(el) {
+  const groupId = el.dataset.group;
+  const wasSelected = el.classList.contains('selected');
+  document.querySelectorAll(`.dup-item[data-group="${groupId}"]`).forEach(item => {
+    item.classList.remove('selected');
+  });
+  if (!wasSelected) {
+    el.classList.add('selected');
+    const btn = document.querySelector(`.btn-delete-others[data-group="${groupId}"]`);
+    if (btn) btn.disabled = false;
+  } else {
+    const btn = document.querySelector(`.btn-delete-others[data-group="${groupId}"]`);
+    if (btn) btn.disabled = true;
+  }
+  updateBatchBar();
+}
+
+function updateBatchBar() {
+  const bar = document.getElementById('batch-bar');
+  const selected = document.querySelectorAll('.dup-group:not(.resolved) .dup-item.selected');
+  const count = new Set(Array.from(selected).map(el => el.dataset.group)).size;
+  if (count > 0) {
+    bar.classList.add('visible');
+    bar.querySelector('.batch-info').textContent = `已选择 ${count} 组`;
+    bar.querySelector('.btn-batch').disabled = false;
+  } else {
+    bar.classList.remove('visible');
+    bar.querySelector('.btn-batch').disabled = true;
+  }
+}
+
+async function batchDelete() {
+  const groups = document.querySelectorAll('.dup-group:not(.resolved)');
+  const toDelete = [];
+  groups.forEach(g => {
+    const sel = g.querySelector('.dup-item.selected');
+    if (!sel) return;
+    g.querySelectorAll('.dup-item:not(.selected)').forEach(item => {
+      toDelete.push({ id: item.dataset.id, group: g });
+    });
+  });
+  if (toDelete.length === 0) return;
+  if (!await showConfirm(`确认删除 ${toDelete.length} 张重复照片？此操作不可撤销。`)) return;
+
+  let failed = 0;
+  for (const { id, group } of toDelete) {
+    try {
+      const res = await fetch('/api/photos/' + id, { method: 'DELETE' });
+      if (!res.ok) failed++;
+    } catch (e) { failed++; }
+  }
+
+  if (failed > 0) {
+    alert(`${failed} 张删除失败`);
+  } else {
+    showToast(`已清理 ${toDelete.length} 张重复照片`);
+  }
+  updateBatchBar();
+  init();
+}
+
+async function deleteOthers(groupId) {
+  const groupEl = document.getElementById('group-' + groupId);
+  const selected = groupEl.querySelector('.dup-item.selected');
+  if (!selected) return;
+  const keepId = selected.dataset.id;
+
+  const others = groupEl.querySelectorAll('.dup-item:not(.selected)');
+  const ids = Array.from(others).map(el => el.dataset.id);
+
+  if (!await showConfirm(`确认删除 ${ids.length} 张重复照片？此操作不可撤销。`)) return;
+
+  let failed = 0;
+  for (const id of ids) {
+    try {
+      const res = await fetch('/api/photos/' + id, { method: 'DELETE' });
+      if (!res.ok) failed++;
+    } catch (e) { failed++; }
+  }
+
+  if (failed > 0) {
+    alert(`${failed} 张删除失败，请重试`);
+  } else {
+    showToast(`已清理 ${ids.length} 张重复照片`);
+    init();
+  }
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# 照片资源与用户数据
+assets/
+data/
+
+# 备份
+backup/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# IDE / 工具
+.vscode/
+.claude/
+.codegraph/

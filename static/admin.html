@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>拾光 · 管理</title>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #111;
+  --surface: #1a1a1a;
+  --surface-hover: #222;
+  --border: #2a2a2a;
+  --border-active: #444;
+  --text: rgba(255,255,255,0.85);
+  --text-dim: rgba(255,255,255,0.5);
+  --text-faint: rgba(255,255,255,0.3);
+  --accent: #a08c6a;
+  --accent-dim: rgba(160,140,106,0.15);
+  --danger: #c0564f;
+  --success: #5fa07a;
+  --radius: 6px;
+  --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --sans: 'Noto Sans SC', -apple-system, 'PingFang SC', sans-serif;
+}
+
+html { font-size: 14px; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 2rem;
+  line-height: 1.6;
+}
+
+/* 全局滚动条 */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.22); }
+html { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.12) transparent; }
+
+/* ─── 头部 ─── */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+header h1 { font-size: 1.2rem; font-weight: 400; letter-spacing: 0.1em; }
+header .links a { color: var(--text-dim); text-decoration: none; font-size: 0.75rem; margin-left: 1rem; }
+header .links a:hover { color: var(--text); }
+
+/* ─── 圆形上传按钮 ─── */
+.fab {
+  position: fixed;
+  top: 6.5rem;
+  right: 2rem;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  color: #111;
+  font-size: 1.4rem;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s, transform 0.15s;
+  z-index: 50;
+}
+.fab:hover { opacity: 0.85; transform: scale(1.08); }
+.fab:active { transform: scale(0.95); }
+
+/* ─── 去重按钮（次要） ─── */
+.fab-secondary {
+  position: fixed;
+  top: 6.5rem;
+  right: 5.9rem;
+  height: 44px;
+  padding: 0 1rem;
+  border-radius: 22px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  font-family: var(--sans);
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: border-color 0.3s, color 0.3s;
+  z-index: 50;
+  text-decoration: none;
+}
+.fab-secondary:hover { border-color: var(--border-active); color: var(--text); }
+.fab-secondary svg { width: 14px; height: 14px; }
+
+/* ─── 上传弹窗 ─── */
+#upload-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s, visibility 0.25s;
+}
+#upload-overlay.show { opacity: 1; visibility: visible; }
+
+#upload-panel {
+  background: rgba(30, 30, 30, 0.65);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 2rem 2.2rem;
+  width: 92%;
+  max-width: 860px;
+  max-height: 88vh;
+  height: fit-content;
+  overflow-y: auto;
+  transform: scale(0.95);
+  transition: transform 0.25s var(--ease);
+}
+#upload-overlay.show #upload-panel { transform: scale(1); }
+
+/* 自定义滚动条 */
+#upload-panel::-webkit-scrollbar { width: 5px; }
+#upload-panel::-webkit-scrollbar-track { background: transparent; }
+#upload-panel::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 3px; }
+#upload-panel::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
+#drop-zone {
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 2rem 2rem;
+  text-align: center;
+  color: var(--text-dim);
+  transition: border-color 0.3s, background 0.3s;
+  cursor: pointer;
+}
+#drop-zone.dragover { border-color: var(--accent); background: var(--accent-dim); }
+#drop-zone .sub { font-size: 0.75rem; color: var(--text-faint); margin-top: 0.5rem; }
+
+/* ─── 上传状态 ─── */
+#upload-status { font-size: 0.8rem; color: var(--success); }
+#upload-status:not(:empty) { margin-bottom: 1rem; min-height: 1.2rem; }
+.preview-grid:empty { display: none; }
+.preview-grid:not(:empty) { margin-top: 1rem; }
+
+/* 上传预览卡片（瀑布流） */
+.preview-grid {
+  columns: 2;
+  column-gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.preview-card {
+  break-inside: avoid;
+  margin-bottom: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.preview-card .thumb-wrap {
+  width: 100%;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.03);
+}
+.preview-card .thumb-wrap img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.preview-card .card-body { padding: 0.75rem 1rem; }
+
+.preview-card .exif-line {
+  font-size: 0.65rem;
+  color: var(--text-faint);
+  margin-bottom: 0.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.preview-card input,
+.preview-card select {
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  padding: 0.35rem 0.5rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  width: 100%;
+  margin-bottom: 0.4rem;
+}
+.preview-card input:focus, .preview-card select:focus { outline: none; border-color: var(--accent); }
+
+.preview-card .featured-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-top: 0.3rem;
+  cursor: pointer;
+}
+.preview-card .featured-toggle input[type="checkbox"] { width: auto; margin: 0; }
+
+/* EXIF 折叠编辑区 */
+.exif-toggle {
+  font-size: 0.65rem;
+  color: var(--text-faint);
+  cursor: pointer;
+  margin-top: 0.4rem;
+  user-select: none;
+  transition: color 0.2s;
+}
+.exif-toggle:hover { color: var(--text-dim); }
+
+.exif-edit {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.35s ease, opacity 0.3s ease, margin 0.3s;
+  margin-top: 0;
+}
+.exif-edit.open {
+  max-height: 300px;
+  opacity: 1;
+  margin-top: 0.5rem;
+}
+.exif-edit .exif-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+}
+.exif-edit .exif-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.exif-edit .exif-field label {
+  font-size: 0.6rem;
+  color: var(--text-faint);
+}
+.exif-edit .exif-field input {
+  font-size: 0.7rem;
+  padding: 0.25rem 0.4rem;
+  margin-bottom: 0;
+}
+
+/* 确认按钮区 */
+.confirm-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+/* ─── 管理视图 ─── */
+.series-tabs {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.series-tabs button {
+  background: none;
+  border: none;
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 0.3rem 0;
+  border-bottom: 1.5px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+}
+.series-tabs button.active { color: var(--text); border-bottom-color: var(--accent); }
+.series-tabs .series-add {
+  font-size: 1rem;
+  color: var(--text-faint);
+  border-bottom: none !important;
+  padding: 0.3rem 0.5rem;
+}
+.series-tabs .series-add:hover { color: var(--accent); }
+.series-tabs .tab-del {
+  display: none;
+  margin-left: 0.3rem;
+  font-size: 0.7rem;
+  color: var(--text-faint);
+  transition: color 0.2s;
+}
+.series-tabs button:hover .tab-del { display: inline; }
+.series-tabs .tab-del:hover { color: var(--danger); }
+.series-tabs .tab-rename {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 0.8rem;
+  padding: 0.2rem 0.5rem;
+  width: 5em;
+  font-family: var(--sans);
+}
+.series-tabs .tab-rename:focus { outline: none; border-color: var(--accent); }
+
+.section-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  margin: 1.5rem 0 0.75rem;
+}
+
+.photo-row {
+  display: grid;
+  grid-template-columns: 90px 1fr auto;
+  grid-template-rows: auto auto auto;
+  align-items: center;
+  column-gap: 0.75rem;
+  row-gap: 0.2rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: border-color 0.2s, opacity 0.2s;
+  overflow: hidden;
+}
+.photo-row.featured {
+  grid-template-columns: 20px 90px 1fr auto;
+}
+.photo-row:hover { border-color: var(--border-active); }
+.photo-row.dragging { opacity: 0.4; }
+.photo-row.drag-over { border-color: var(--accent); }
+.photo-row[draggable="true"] { cursor: grab; }
+
+.photo-row .order-num { display: none; }
+.photo-row.featured .order-num {
+  display: block;
+  grid-column: 1;
+  grid-row: 1 / 3;
+  align-self: center;
+  font-size: 0.6rem;
+  color: var(--text-faint);
+  text-align: center;
+  user-select: none;
+}
+.photo-row .thumb {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  width: 90px;
+  height: 60px;
+  object-fit: contain;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  align-self: center;
+}
+.photo-row.featured .thumb { grid-column: 2; }
+.photo-row .inputs-wrap {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  align-self: center;
+}
+.photo-row.featured .inputs-wrap { grid-column: 3; }
+.photo-row .actions-wrap {
+  grid-column: 3;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  align-self: center;
+}
+.photo-row.featured .actions-wrap { grid-column: 4; }
+.photo-row .exif-summary {
+  grid-column: 2 / -1;
+  grid-row: 2;
+  font-size: 0.6rem;
+  color: var(--text-faint);
+  cursor: pointer;
+  user-select: none;
+}
+.photo-row.featured .exif-summary { grid-column: 3 / -1; }
+.photo-row input {
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  padding: 0.3rem 0.5rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  width: 100%;
+}
+.photo-row input:focus { outline: none; border-color: var(--accent); }
+
+.photo-row .star {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  color: var(--text-faint);
+  transition: color 0.2s;
+}
+.photo-row .star.on { color: var(--accent); }
+
+.photo-row .del {
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  transition: color 0.2s;
+}
+.photo-row .del:hover { color: var(--danger); }
+
+/* 行内 EXIF 展开面板（覆盖全局 .exif-edit 样式） */
+.photo-row .exif-edit {
+  grid-column: 1 / -1;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  padding: 0 0.75rem;
+  border-top: 0 solid rgba(255,255,255,0.06);
+  transition: max-height 0.35s var(--ease), opacity 0.3s var(--ease),
+              padding 0.3s var(--ease), border-top-width 0.2s;
+}
+.photo-row .exif-edit.open {
+  max-height: 300px;
+  opacity: 1;
+  padding: 0.7rem 0.75rem 0.8rem;
+  border-top-width: 1px;
+  margin-top: 0.5rem;
+}
+.photo-row .exif-edit .exif-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem 1rem;
+}
+.photo-row .exif-edit .exif-field label {
+  font-size: 0.6rem;
+  color: var(--text-faint);
+  letter-spacing: 0.05em;
+}
+.photo-row .exif-edit .exif-field input {
+  font-size: 0.7rem;
+  padding: 0.3rem 0.5rem;
+  margin-bottom: 0;
+}
+
+/* ─── 通用按钮 ─── */
+button.btn {
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  padding: 0.5rem 1.2rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+button.btn:hover { border-color: var(--border-active); background: var(--surface-hover); }
+button.btn.primary { background: var(--accent); border-color: var(--accent); color: #111; font-weight: 500; }
+button.btn.primary:hover { opacity: 0.9; }
+button.btn.danger { border-color: var(--danger); color: var(--danger); }
+button.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ─── Toast ─── */
+#toast {
+  position: fixed;
+  bottom: 2rem; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.6rem 1.5rem;
+  font-size: 0.8rem;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+  z-index: 100;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ─── 自定义确认弹窗 ─── */
+#modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+}
+#modal-overlay.show { opacity: 1; visibility: visible; }
+
+#modal-box {
+  background: rgba(30, 30, 30, 0.65);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius);
+  padding: 1.8rem 2rem;
+  max-width: 340px;
+  width: 90%;
+  text-align: center;
+  transform: scale(0.95);
+  transition: transform 0.2s var(--ease);
+}
+#modal-overlay.show #modal-box { transform: scale(1); }
+
+#modal-box .modal-msg {
+  font-size: 0.85rem;
+  color: var(--text);
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+#modal-box .modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+#modal-box .modal-actions button {
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  padding: 0.45rem 1.4rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-dim);
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+#modal-box .modal-actions button:hover { border-color: var(--border-active); color: var(--text); }
+
+#modal-box .modal-actions .modal-confirm {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+#modal-box .modal-actions .modal-confirm:hover { opacity: 0.85; }
+
+#modal-box .modal-input {
+  width: 100%;
+  margin-bottom: 1.2rem;
+  padding: 0.5rem 0.75rem;
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius);
+  outline: none;
+  transition: border-color 0.2s;
+}
+#modal-box .modal-input:focus { border-color: rgba(255, 255, 255, 0.35); }
+
+/* ─── 空状态 ─── */
+.empty { text-align: center; padding: 3rem; color: var(--text-faint); font-size: 0.85rem; }
+
+/* ─── 响应式 ─── */
+@media (min-width: 1100px) {
+  #featured-list, #all-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+}
+@media (max-width: 700px) {
+  body { padding: 1rem; }
+  .photo-row { grid-template-columns: 72px 1fr auto; }
+  .photo-row.featured { grid-template-columns: 18px 72px 1fr auto; }
+  .photo-row .thumb { width: 72px; height: 48px; }
+  .preview-grid { columns: 1; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>拾光 · 作品管理</h1>
+  <div class="links"><a href="/">查看画廊 →</a></div>
+</header>
+
+<!-- 圆形上传按钮 -->
+<button id="btn-upload-fab" class="fab" title="上传照片">+</button>
+<a href="/admin/dedup" class="fab-secondary" title="照片去重">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M4 16V6a2 2 0 0 1 2-2h10"/></svg>
+  去重
+</a>
+
+<!-- 上传弹窗 -->
+<div id="upload-overlay">
+  <div id="upload-panel">
+    <div id="drop-zone">
+      <p>将照片拖入此处，或点击选择文件</p>
+      <p class="sub">上传后自动解析 EXIF 信息</p>
+    </div>
+    <div id="upload-status"></div>
+    <div class="preview-grid" id="preview-grid"></div>
+    <div class="confirm-bar" id="confirm-bar" style="display:none;">
+      <button class="btn primary" id="btn-confirm">确认上传</button>
+      <button class="btn danger" id="btn-cancel-upload">取消全部</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 管理视图 ═══ -->
+<div id="manage-view">
+  <div class="series-tabs" id="series-tabs">
+    <!-- 由 JS 动态渲染 -->
+    <button class="series-add" id="btn-add-series" title="新增主题">+</button>
+  </div>
+
+  <div class="section-label">★ 精选（拖拽排序）</div>
+  <div id="featured-list"></div>
+
+  <div class="section-label">全部作品</div>
+  <div id="all-list"></div>
+  <div class="empty" id="manage-empty" style="display:none;">该系列暂无照片</div>
+</div>
+
+<div id="toast"></div>
+
+<!-- 自定义确认弹窗 -->
+<div id="modal-overlay">
+  <div id="modal-box">
+    <p class="modal-msg"></p>
+    <input class="modal-input" type="text" style="display:none;" />
+    <div class="modal-actions">
+      <button class="modal-cancel">取消</button>
+      <button class="modal-confirm">删除</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════
+   状态
+   ═══════════════════════════════════════════ */
+let pendingUploads = [];  // 上传预览中的照片
+let allPhotos = [];       // 已入库的全部照片
+let currentManageSeries = 'shanchuan';
+
+
+/* 缩略图 URL（带 fallback） */
+function getThumb(photo) {
+  return photo.thumb ? '/assets/thumbs/' + photo.thumb : '/assets/' + photo.filename;
+}
+
+let SERIES = [];  // 从 API 动态加载
+
+/* DOM */
+const fabUpload = document.getElementById('btn-upload-fab');
+const uploadOverlay = document.getElementById('upload-overlay');
+const uploadPanel = document.getElementById('upload-panel');
+const dropZone = document.getElementById('drop-zone');
+const uploadStatus = document.getElementById('upload-status');
+const previewGrid = document.getElementById('preview-grid');
+const confirmBar = document.getElementById('confirm-bar');
+const featuredList = document.getElementById('featured-list');
+const allList = document.getElementById('all-list');
+const manageEmpty = document.getElementById('manage-empty');
+
+/* ═══════════════════════════════════════════
+   上传弹窗开关
+   ═══════════════════════════════════════════ */
+function openUploadModal() { uploadOverlay.classList.add('show'); }
+function closeUploadModal() { uploadOverlay.classList.remove('show'); }
+
+fabUpload.addEventListener('click', openUploadModal);
+
+/* 点击遮罩关闭（排除从 panel 内部拖出的 mouseup） */
+let panelMouseDown = false;
+uploadPanel.addEventListener('mousedown', () => { panelMouseDown = true; });
+uploadOverlay.addEventListener('click', (e) => {
+  if (e.target === uploadOverlay && !panelMouseDown) closeUploadModal();
+  panelMouseDown = false;
+});
+
+/* ═══════════════════════════════════════════
+   拖拽 / 点击上传
+   ═══════════════════════════════════════════ */
+dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  const files = Array.from(e.dataTransfer.files).filter(f => /\.(jpe?g|png|webp|gif|tiff?)$/i.test(f.name));
+  if (files.length) doUpload(files);
+});
+dropZone.addEventListener('click', () => {
+  const input = document.createElement('input');
+  input.type = 'file'; input.multiple = true; input.accept = 'image/*';
+  input.onchange = () => { if (input.files.length) doUpload(Array.from(input.files)); };
+  input.click();
+});
+
+/* ═══════════════════════════════════════════
+   上传流程
+   ═══════════════════════════════════════════ */
+async function doUpload(files) {
+  uploadStatus.textContent = `正在上传并解析 ${files.length} 张照片…`;
+  const formData = new FormData();
+  files.forEach(f => formData.append('files', f));
+
+  try {
+    const res = await fetch('/api/photos/upload', { method: 'POST', body: formData });
+    if (!res.ok) throw new Error((await res.json()).detail || '上传失败');
+    const results = await res.json();
+    pendingUploads = results;
+    uploadStatus.textContent = `已解析 ${results.length} 张照片的 EXIF 信息，请确认后入库。`;
+    renderPreviews();
+  } catch (e) {
+    uploadStatus.textContent = '上传失败: ' + e.message;
+    uploadStatus.style.color = 'var(--danger)';
+    setTimeout(() => { uploadStatus.style.color = ''; }, 4000);
+  }
+}
+
+function renderPreviews() {
+  previewGrid.innerHTML = '';
+  confirmBar.style.display = pendingUploads.length ? 'flex' : 'none';
+
+  pendingUploads.forEach((photo, i) => {
+    const exif = photo.exif || {};
+    const exifParts = [exif.camera, exif.lens, exif.focal_length, exif.aperture, exif.shutter_speed, exif.iso, exif.date_taken].filter(Boolean);
+
+    const card = document.createElement('div');
+    card.className = 'preview-card';
+    card.innerHTML = `
+      <div class="thumb-wrap"><img src="${getThumb(photo)}" alt=""></div>
+      <div class="card-body">
+        <div class="exif-line" title="${escapeHtml(exifParts.join(' | '))}">${escapeHtml(exifParts.join(' · ') || '无 EXIF 信息')}</div>
+        <input type="text" value="${escapeHtml(photo.title)}" placeholder="标题" data-idx="${i}" data-field="title">
+        <input type="text" value="${escapeHtml(photo.location || '')}" placeholder="拍摄地点" data-idx="${i}" data-field="location">
+        <select data-idx="${i}" data-field="series">
+          ${SERIES.map(s => `<option value="${s.id}" ${photo.series === s.id ? 'selected' : ''}>${s.name}</option>`).join('')}
+        </select>
+        <label class="featured-toggle">
+          <input type="checkbox" data-idx="${i}" data-field="featured" ${photo.featured ? 'checked' : ''}>
+          设为精选
+        </label>
+        <div class="exif-toggle" data-idx="${i}">▸ 编辑 EXIF</div>
+        <div class="exif-edit" id="exif-edit-${i}">
+          <div class="exif-grid">
+            <div class="exif-field"><label>相机</label><input type="text" value="${escapeHtml(exif.camera || '')}" data-idx="${i}" data-exif="camera"></div>
+            <div class="exif-field"><label>镜头</label><input type="text" value="${escapeHtml(exif.lens || '')}" data-idx="${i}" data-exif="lens"></div>
+            <div class="exif-field"><label>焦距</label><input type="text" value="${escapeHtml(exif.focal_length || '')}" data-idx="${i}" data-exif="focal_length"></div>
+            <div class="exif-field"><label>光圈</label><input type="text" value="${escapeHtml(exif.aperture || '')}" data-idx="${i}" data-exif="aperture"></div>
+            <div class="exif-field"><label>快门</label><input type="text" value="${escapeHtml(exif.shutter_speed || '')}" data-idx="${i}" data-exif="shutter_speed"></div>
+            <div class="exif-field"><label>ISO</label><input type="text" value="${escapeHtml(exif.iso || '')}" data-idx="${i}" data-exif="iso"></div>
+            <div class="exif-field"><label>拍摄日期</label><input type="text" value="${escapeHtml(photo.date_taken || '')}" data-idx="${i}" data-exif="date_taken"></div>
+          </div>
+        </div>
+      </div>
+    `;
+    previewGrid.appendChild(card);
+  });
+
+  // 绑定编辑
+  previewGrid.querySelectorAll('[data-field]').forEach(el => {
+    el.addEventListener('change', () => {
+      const idx = parseInt(el.dataset.idx);
+      const field = el.dataset.field;
+      pendingUploads[idx][field] = field === 'featured' ? el.checked : el.value;
+    });
+  });
+
+  // EXIF 折叠切换
+  previewGrid.querySelectorAll('.exif-toggle').forEach(el => {
+    el.addEventListener('click', () => {
+      const idx = el.dataset.idx;
+      const panel = document.getElementById('exif-edit-' + idx);
+      const isOpen = panel.classList.toggle('open');
+      el.textContent = isOpen ? '▾ 收起 EXIF' : '▸ 编辑 EXIF';
+    });
+  });
+
+  // EXIF 字段编辑
+  previewGrid.querySelectorAll('[data-exif]').forEach(el => {
+    el.addEventListener('change', () => {
+      const idx = parseInt(el.dataset.idx);
+      const field = el.dataset.exif;
+      if (field === 'date_taken') {
+        pendingUploads[idx].date_taken = el.value;
+      } else {
+        if (!pendingUploads[idx].exif) pendingUploads[idx].exif = {};
+        pendingUploads[idx].exif[field] = el.value;
+      }
+    });
+  });
+}
+
+/* 确认上传：将编辑后的元数据写回 */
+document.getElementById('btn-confirm').addEventListener('click', async () => {
+  for (const photo of pendingUploads) {
+    await fetch(`/api/photos/${photo.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: photo.title,
+        location: photo.location,
+        series: photo.series,
+        featured: photo.featured,
+        date_taken: photo.date_taken || '',
+        exif: photo.exif || {},
+      }),
+    });
+  }
+  showToast(`已确认 ${pendingUploads.length} 张照片`);
+  pendingUploads = [];
+  previewGrid.innerHTML = '';
+  confirmBar.style.display = 'none';
+  uploadStatus.textContent = '';
+  closeUploadModal();
+  loadManage();
+});
+
+/* 取消上传：删除已上传的文件 */
+document.getElementById('btn-cancel-upload').addEventListener('click', async () => {
+  for (const photo of pendingUploads) {
+    await fetch(`/api/photos/${photo.id}`, { method: 'DELETE' });
+  }
+  pendingUploads = [];
+  previewGrid.innerHTML = '';
+  confirmBar.style.display = 'none';
+  uploadStatus.textContent = '已取消';
+  closeUploadModal();
+  setTimeout(() => { uploadStatus.textContent = ''; }, 2000);
+});
+
+/* ═══════════════════════════════════════════
+   系列管理（动态 tab）
+   ═══════════════════════════════════════════ */
+const seriesTabsEl = document.getElementById('series-tabs');
+const btnAddSeries = document.getElementById('btn-add-series');
+
+function renderSeriesTabs() {
+  // 移除旧 tab（保留 add 按钮）
+  seriesTabsEl.querySelectorAll('[data-series]').forEach(el => el.remove());
+
+  SERIES.forEach(s => {
+    const btn = document.createElement('button');
+    btn.dataset.series = s.id;
+    btn.innerHTML = `${escapeHtml(s.name)}<span class="tab-del" title="删除主题">×</span>`;
+    if (s.id === currentManageSeries) btn.classList.add('active');
+
+    btn.addEventListener('click', (e) => {
+      if (e.target.classList.contains('tab-del')) return;
+      seriesTabsEl.querySelectorAll('[data-series]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentManageSeries = s.id;
+      loadManage();
+    });
+
+    // 双击重命名
+    btn.addEventListener('dblclick', () => startRename(s, btn));
+
+    // 删除
+    btn.querySelector('.tab-del').addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const ok = await showConfirm(`确定删除主题「${s.name}」？该主题下的照片将移入未归类。`);
+      if (!ok) return;
+      await fetch(`/api/series/${s.id}`, { method: 'DELETE' });
+      SERIES = SERIES.filter(x => x.id !== s.id);
+      if (currentManageSeries === s.id) currentManageSeries = SERIES[0]?.id || '';
+      renderSeriesTabs();
+      loadManage();
+      showToast('主题已删除');
+    });
+
+    seriesTabsEl.insertBefore(btn, btnAddSeries);
+  });
+}
+
+function startRename(s, btn) {
+  const input = document.createElement('input');
+  input.className = 'tab-rename';
+  input.value = s.name;
+  btn.replaceWith(input);
+  input.focus();
+  input.select();
+
+  async function commit() {
+    const name = input.value.trim();
+    if (name && name !== s.name) {
+      await fetch(`/api/series/${s.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+      s.name = name;
+      showToast('已重命名');
+    }
+    input.remove();
+    renderSeriesTabs();
+  }
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') input.blur();
+    if (e.key === 'Escape') { input.value = s.name; input.blur(); }
+  });
+}
+
+btnAddSeries.addEventListener('click', async () => {
+  const name = await showPrompt('新主题名称：');
+  if (!name || !name.trim()) return;
+  try {
+    const res = await fetch('/api/series', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name.trim() }),
+    });
+    if (!res.ok) { showToast((await res.json()).detail || '创建失败'); return; }
+    const entry = await res.json();
+    SERIES.push(entry);
+    currentManageSeries = entry.id;
+    renderSeriesTabs();
+    loadManage();
+    showToast(`已创建主题「${entry.name}」`);
+  } catch (e) { showToast('创建失败'); }
+});
+
+async function loadManage() {
+  try {
+    const res = await fetch(`/api/photos?series=${currentManageSeries}`);
+    allPhotos = await res.json();
+  } catch (e) { allPhotos = []; }
+  renderManage();
+}
+
+function renderManage() {
+  const featured = allPhotos.filter(p => p.featured);
+  const rest = allPhotos;
+
+  manageEmpty.style.display = allPhotos.length ? 'none' : 'block';
+
+  // 精选列表（可拖拽排序）
+  featuredList.innerHTML = '';
+  if (featured.length === 0) {
+    featuredList.innerHTML = '<div class="empty" style="padding:1rem;">暂无精选照片，在下方点击 ★ 标记</div>';
+  }
+  featured.forEach((photo, index) => {
+    featuredList.appendChild(createRow(photo, index, true));
+  });
+
+  // 全部列表
+  allList.innerHTML = '';
+  rest.forEach((photo) => {
+    allList.appendChild(createRow(photo, -1, false));
+  });
+}
+
+function createRow(photo, featuredIdx, isFeaturedSection) {
+  const row = document.createElement('div');
+  row.className = 'photo-row' + (isFeaturedSection ? ' featured' : '');
+  row.dataset.id = photo.id;
+
+  if (isFeaturedSection) {
+    row.draggable = true;
+  }
+
+  const exif = photo.exif || {};
+  const exifSummary = [exif.aperture, exif.shutter_speed, exif.iso].filter(Boolean).join(' ');
+  const rowUid = 'row-exif-' + photo.id;
+
+  row.innerHTML = `
+    <span class="order-num">${isFeaturedSection ? featuredIdx + 1 : ''}</span>
+    <img class="thumb" src="${getThumb(photo)}" alt="" loading="lazy">
+    <div class="inputs-wrap">
+      <input type="text" value="${escapeHtml(photo.title)}" placeholder="标题" data-field="title">
+      <input type="text" value="${escapeHtml(photo.location || '')}" placeholder="地点" data-field="location">
+    </div>
+    <div class="actions-wrap">
+      <button class="star ${photo.featured ? 'on' : ''}" title="精选">★</button>
+      <button class="del" title="删除"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14zM10 11v6M14 11v6"/></svg></button>
+    </div>
+    <div class="exif-summary">
+      ${escapeHtml(exifSummary)} ${photo.date_taken ? '· ' + photo.date_taken : ''} <span style="opacity:0.6">▸</span>
+    </div>
+  `;
+
+  // EXIF 折叠面板（嵌入行内，跨全列）
+  const exifPanel = document.createElement('div');
+  exifPanel.className = 'exif-edit';
+  exifPanel.id = rowUid;
+  exifPanel.innerHTML = `
+    <div class="exif-grid">
+      <div class="exif-field"><label>相机</label><input type="text" value="${escapeHtml(exif.camera || '')}" data-exif="camera"></div>
+      <div class="exif-field"><label>镜头</label><input type="text" value="${escapeHtml(exif.lens || '')}" data-exif="lens"></div>
+      <div class="exif-field"><label>焦距</label><input type="text" value="${escapeHtml(exif.focal_length || '')}" data-exif="focal_length"></div>
+      <div class="exif-field"><label>光圈</label><input type="text" value="${escapeHtml(exif.aperture || '')}" data-exif="aperture"></div>
+      <div class="exif-field"><label>快门</label><input type="text" value="${escapeHtml(exif.shutter_speed || '')}" data-exif="shutter_speed"></div>
+      <div class="exif-field"><label>ISO</label><input type="text" value="${escapeHtml(exif.iso || '')}" data-exif="iso"></div>
+      <div class="exif-field"><label>拍摄日期</label><input type="text" value="${escapeHtml(photo.date_taken || '')}" data-exif="date_taken"></div>
+    </div>
+  `;
+
+  // EXIF 折叠切换
+  row.querySelector('.exif-summary').addEventListener('click', () => {
+    exifPanel.classList.toggle('open');
+  });
+
+  // EXIF 字段编辑 → PATCH API
+  exifPanel.querySelectorAll('[data-exif]').forEach(el => {
+    el.addEventListener('change', async () => {
+      const field = el.dataset.exif;
+      if (field === 'date_taken') {
+        photo.date_taken = el.value;
+        await fetch(`/api/photos/${photo.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ date_taken: el.value }),
+        });
+      } else {
+        if (!photo.exif) photo.exif = {};
+        photo.exif[field] = el.value;
+        await fetch(`/api/photos/${photo.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ exif: { [field]: el.value } }),
+        });
+      }
+      showToast('EXIF 已保存');
+    });
+  });
+
+  // 元数据编辑
+  row.querySelectorAll('[data-field]').forEach(el => {
+    el.addEventListener('change', async () => {
+      const field = el.dataset.field;
+      photo[field] = el.value;
+      await fetch(`/api/photos/${photo.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: el.value }),
+      });
+      showToast('已保存');
+    });
+  });
+
+  // 精选切换
+  row.querySelector('.star').addEventListener('click', async (e) => {
+    const newState = !photo.featured;
+    photo.featured = newState;
+    e.target.classList.toggle('on', newState);
+    await fetch(`/api/photos/${photo.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ featured: newState }),
+    });
+    renderManage();
+    showToast(newState ? '已标记精选' : '已取消精选');
+  });
+
+  // 删除
+  row.querySelector('.del').addEventListener('click', async () => {
+    const ok = await showConfirm(`确定删除「${photo.title}」？文件将被移除。`);
+    if (!ok) return;
+    await fetch(`/api/photos/${photo.id}`, { method: 'DELETE' });
+    allPhotos = allPhotos.filter(p => p.id !== photo.id);
+    renderManage();
+    showToast('已删除');
+  });
+
+  // 拖拽排序（仅精选区）
+  if (isFeaturedSection) {
+    row.addEventListener('dragstart', (e) => {
+      row.classList.add('dragging');
+      e.dataTransfer.setData('text/plain', photo.id);
+    });
+    row.addEventListener('dragend', () => {
+      row.classList.remove('dragging');
+      featuredList.querySelectorAll('.photo-row').forEach(r => r.classList.remove('drag-over'));
+    });
+    row.addEventListener('dragover', (e) => { e.preventDefault(); row.classList.add('drag-over'); });
+    row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+    row.addEventListener('drop', (e) => {
+      e.preventDefault();
+      row.classList.remove('drag-over');
+      const dragId = e.dataTransfer.getData('text/plain');
+      if (dragId === photo.id) return;
+
+      // 重排 allPhotos 中精选照片的顺序
+      const featured = allPhotos.filter(p => p.featured);
+      const fromIdx = featured.findIndex(p => p.id === dragId);
+      const toIdx = featured.findIndex(p => p.id === photo.id);
+      const [moved] = featured.splice(fromIdx, 1);
+      featured.splice(toIdx, 0, moved);
+
+      // 重建 allPhotos：精选按新顺序在前，非精选保持原序
+      const nonFeatured = allPhotos.filter(p => !p.featured);
+      allPhotos = [...featured, ...nonFeatured];
+      renderManage();
+      // 自动保存排序
+      const featuredIds = featured.map(p => p.id);
+      fetch('/api/photos/order', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: featuredIds }),
+      }).then(() => showToast('排序已保存')).catch(() => showToast('排序保存失败'));
+    });
+  }
+
+  row.appendChild(exifPanel);
+  const frag = document.createDocumentFragment();
+  frag.appendChild(row);
+  return frag;
+}
+
+/* ═══════════════════════════════════════════
+   工具
+   ═══════════════════════════════════════════ */
+function escapeHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+let toastTimer = null;
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+/* 自定义确认弹窗（替代原生 confirm） */
+function showConfirm(msg) {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById('modal-overlay');
+    const box = document.getElementById('modal-box');
+    box.querySelector('.modal-msg').textContent = msg;
+    overlay.classList.add('show');
+
+    const confirmBtn = box.querySelector('.modal-confirm');
+    const cancelBtn = box.querySelector('.modal-cancel');
+
+    function cleanup(result) {
+      overlay.classList.remove('show');
+      confirmBtn.removeEventListener('click', onConfirm);
+      cancelBtn.removeEventListener('click', onCancel);
+      overlay.removeEventListener('click', onOverlay);
+      resolve(result);
+    }
+    function onConfirm() { cleanup(true); }
+    function onCancel() { cleanup(false); }
+    function onOverlay(e) { if (e.target === overlay) cleanup(false); }
+
+    confirmBtn.addEventListener('click', onConfirm);
+    cancelBtn.addEventListener('click', onCancel);
+    overlay.addEventListener('click', onOverlay);
+  });
+}
+
+/* 自定义输入弹窗（替代原生 prompt） */
+function showPrompt(msg, placeholder) {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById('modal-overlay');
+    const box = document.getElementById('modal-box');
+    const input = box.querySelector('.modal-input');
+    const confirmBtn = box.querySelector('.modal-confirm');
+    const cancelBtn = box.querySelector('.modal-cancel');
+
+    box.querySelector('.modal-msg').textContent = msg;
+    input.style.display = 'block';
+    input.value = '';
+    input.placeholder = placeholder || '';
+    confirmBtn.textContent = '确定';
+    confirmBtn.style.background = 'rgba(255,255,255,0.12)';
+    confirmBtn.style.borderColor = 'rgba(255,255,255,0.25)';
+    overlay.classList.add('show');
+    setTimeout(() => input.focus(), 50);
+
+    function cleanup(result) {
+      overlay.classList.remove('show');
+      input.style.display = 'none';
+      confirmBtn.textContent = '删除';
+      confirmBtn.style.background = '';
+      confirmBtn.style.borderColor = '';
+      confirmBtn.removeEventListener('click', onConfirm);
+      cancelBtn.removeEventListener('click', onCancel);
+      overlay.removeEventListener('click', onOverlay);
+      input.removeEventListener('keydown', onKey);
+      resolve(result);
+    }
+    function onConfirm() { cleanup(input.value); }
+    function onCancel() { cleanup(null); }
+    function onOverlay(e) { if (e.target === overlay) cleanup(null); }
+    function onKey(e) {
+      if (e.key === 'Enter') cleanup(input.value);
+      if (e.key === 'Escape') cleanup(null);
+    }
+
+    confirmBtn.addEventListener('click', onConfirm);
+    cancelBtn.addEventListener('click', onCancel);
+    overlay.addEventListener('click', onOverlay);
+    input.addEventListener('keydown', onKey);
+  });
+}
+
+/* ═══════════════════════════════════════════
+   初始化
+   ═══════════════════════════════════════════ */
+(async function init() {
+  try {
+    const res = await fetch('/api/series');
+    const data = await res.json();
+    SERIES = data.map(s => ({ id: s.id, name: s.name }));
+  } catch (e) { SERIES = []; }
+  if (SERIES.length) currentManageSeries = SERIES[0].id;
+  renderSeriesTabs();
+  loadManage();
+})();
+</script>
+</body>
+</html>
