@@ -102,7 +102,8 @@ header .links a:hover { color: var(--text); }
   text-decoration: none;
 }
 .fab-secondary:hover { border-color: var(--border-active); color: var(--text); }
-.fab-secondary svg { width: 14px; height: 14px; }
+.fab-secondary svg { width: 15px; height: 15px; transition: transform 0.3s var(--ease); }
+.fab-secondary:hover svg { transform: scale(1.12); color: var(--accent); }
 
 /* ─── 上传弹窗 ─── */
 #upload-overlay {
@@ -129,18 +130,19 @@ header .links a:hover { color: var(--text); }
   width: 92%;
   max-width: 860px;
   max-height: 88vh;
-  height: fit-content;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   transform: scale(0.95);
   transition: transform 0.25s var(--ease);
 }
 #upload-overlay.show #upload-panel { transform: scale(1); }
 
 /* 自定义滚动条 */
-#upload-panel::-webkit-scrollbar { width: 5px; }
-#upload-panel::-webkit-scrollbar-track { background: transparent; }
-#upload-panel::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 3px; }
-#upload-panel::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+.preview-grid::-webkit-scrollbar { width: 5px; }
+.preview-grid::-webkit-scrollbar-track { background: transparent; }
+.preview-grid::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 3px; }
+.preview-grid::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
 
 #drop-zone {
   border: 1.5px dashed var(--border);
@@ -155,8 +157,6 @@ header .links a:hover { color: var(--text); }
 #drop-zone .sub { font-size: 0.75rem; color: var(--text-faint); margin-top: 0.5rem; }
 
 /* ─── 上传状态 ─── */
-#upload-status { font-size: 0.8rem; color: var(--success); }
-#upload-status:not(:empty) { margin-bottom: 1rem; min-height: 1.2rem; }
 .preview-grid:empty { display: none; }
 .preview-grid:not(:empty) { margin-top: 1rem; }
 
@@ -164,7 +164,11 @@ header .links a:hover { color: var(--text); }
 .preview-grid {
   columns: 2;
   column-gap: 1rem;
-  margin-bottom: 1.5rem;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding-bottom: 1rem;
+  scrollbar-width: thin;
 }
 
 .preview-card {
@@ -212,27 +216,60 @@ header .links a:hover { color: var(--text); }
 }
 .preview-card input:focus, .preview-card select:focus { outline: none; border-color: var(--accent); }
 
-.preview-card .featured-toggle {
+.preview-card .card-footer-row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.75rem;
-  color: var(--text-dim);
-  margin-top: 0.3rem;
-  cursor: pointer;
+  justify-content: space-between;
+  margin-top: 0.4rem;
 }
-.preview-card .featured-toggle input[type="checkbox"] { width: auto; margin: 0; }
+
+.preview-card .featured-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.2s;
+}
+.preview-card .featured-toggle:hover { color: var(--text-dim); }
+.preview-card .featured-toggle svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  transition: fill 0.2s var(--ease), transform 0.2s var(--ease), color 0.2s;
+}
+.preview-card .featured-toggle:hover svg { transform: scale(1.12); color: var(--accent); }
+.preview-card .featured-toggle.on { color: var(--accent); }
+.preview-card .featured-toggle.on svg { fill: currentColor; filter: drop-shadow(0 0 5px rgba(160, 140, 106, 0.4)); }
 
 /* EXIF 折叠编辑区 */
 .exif-toggle {
-  font-size: 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
   color: var(--text-faint);
   cursor: pointer;
-  margin-top: 0.4rem;
   user-select: none;
   transition: color 0.2s;
 }
 .exif-toggle:hover { color: var(--text-dim); }
+.exif-toggle .exif-toggle-arrow {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.25s var(--ease);
+}
+.exif-toggle.open .exif-toggle-arrow { transform: rotate(90deg); }
 
 .exif-edit {
   max-height: 0;
@@ -266,13 +303,48 @@ header .links a:hover { color: var(--text); }
   margin-bottom: 0;
 }
 
-/* 确认按钮区 */
+/* 确认按钮区（固定在弹窗底部居中） */
 .confirm-bar {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 1rem;
-  margin-top: 1rem;
+  margin: 0 -2.2rem -2rem;
+  padding: 0.9rem 2.2rem;
+  background: rgba(22, 22, 22, 0.65);
+  backdrop-filter: blur(20px) saturate(1.3);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0 0 12px 12px;
+  flex-shrink: 0;
 }
+.confirm-bar .bar-info { font-size: 0.72rem; color: var(--text-dim); }
+
+/* 预览卡片删除按钮 */
+.preview-card { position: relative; }
+.preview-card .preview-remove {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.6);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.2s, transform 0.2s, background 0.2s;
+  z-index: 2;
+}
+.preview-card:hover .preview-remove { opacity: 1; transform: scale(1); }
+.preview-card .preview-remove:hover { background: var(--danger); color: #fff; }
 
 /* ─── 管理视图 ─── */
 .series-tabs {
@@ -331,11 +403,11 @@ header .links a:hover { color: var(--text); }
 
 .photo-row {
   display: grid;
-  grid-template-columns: 90px 1fr auto;
-  grid-template-rows: auto auto auto;
+  grid-template-columns: 90px 1fr auto auto;
+  grid-template-rows: auto auto;
   align-items: center;
   column-gap: 0.75rem;
-  row-gap: 0.2rem;
+  row-gap: 0;
   padding: 0.6rem 0.75rem;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -344,7 +416,7 @@ header .links a:hover { color: var(--text); }
   overflow: hidden;
 }
 .photo-row.featured {
-  grid-template-columns: 20px 90px 1fr auto;
+  grid-template-columns: 20px 90px 1fr auto auto;
 }
 .photo-row:hover { border-color: var(--border-active); }
 .photo-row.dragging { opacity: 0.4; }
@@ -355,7 +427,7 @@ header .links a:hover { color: var(--text); }
 .photo-row.featured .order-num {
   display: block;
   grid-column: 1;
-  grid-row: 1 / 3;
+  grid-row: 1;
   align-self: center;
   font-size: 0.6rem;
   color: var(--text-faint);
@@ -364,7 +436,7 @@ header .links a:hover { color: var(--text); }
 }
 .photo-row .thumb {
   grid-column: 1;
-  grid-row: 1 / 3;
+  grid-row: 1;
   width: 90px;
   height: 60px;
   object-fit: contain;
@@ -382,24 +454,45 @@ header .links a:hover { color: var(--text); }
   align-self: center;
 }
 .photo-row.featured .inputs-wrap { grid-column: 3; }
-.photo-row .actions-wrap {
+.photo-row .exif-summary {
   grid-column: 3;
   grid-row: 1;
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  align-self: center;
-}
-.photo-row.featured .actions-wrap { grid-column: 4; }
-.photo-row .exif-summary {
-  grid-column: 2 / -1;
-  grid-row: 2;
+  gap: 0.5rem;
   font-size: 0.6rem;
   color: var(--text-faint);
   cursor: pointer;
   user-select: none;
+  padding: 0.2rem 1rem;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  line-height: 1.6;
+  align-self: center;
+  min-width: 10em;
 }
-.photo-row.featured .exif-summary { grid-column: 3 / -1; }
+.photo-row .exif-arrow {
+  display: flex;
+  align-items: center;
+  color: var(--text-dim);
+  transition: transform 0.25s var(--ease), color 0.2s;
+  flex-shrink: 0;
+}
+.photo-row .exif-arrow svg { width: 13px; height: 13px; }
+.photo-row .exif-summary:hover .exif-arrow { color: var(--accent); }
+.photo-row .exif-summary.open .exif-arrow {
+  transform: rotate(90deg);
+}
+.photo-row.featured .exif-summary { grid-column: 4; }
+.photo-row .actions-wrap {
+  grid-column: 4;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  align-self: center;
+}
+.photo-row.featured .actions-wrap { grid-column: 5; }
 .photo-row input {
   font-family: var(--sans);
   font-size: 0.75rem;
@@ -412,32 +505,54 @@ header .links a:hover { color: var(--text); }
 }
 .photo-row input:focus { outline: none; border-color: var(--accent); }
 
-.photo-row .star {
-  background: none;
-  border: none;
-  font-size: 1rem;
-  cursor: pointer;
-  color: var(--text-faint);
-  transition: color 0.2s;
-}
-.photo-row .star.on { color: var(--accent); }
-
+/* 操作图标按钮（精选 / 移动 / 删除 统一样式） */
+.photo-row .star,
+.photo-row .move-series,
 .photo-row .del {
-  background: none;
-  border: none;
-  color: var(--text-faint);
-  cursor: pointer;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2px;
-  transition: color 0.2s;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.2s var(--ease), color 0.2s var(--ease), transform 0.15s var(--ease);
 }
-.photo-row .del:hover { color: var(--danger); }
+.photo-row .star:hover,
+.photo-row .move-series:hover,
+.photo-row .del:hover { background: rgba(255, 255, 255, 0.06); }
+.photo-row .star:active,
+.photo-row .move-series:active,
+.photo-row .del:active { transform: scale(0.88); }
+
+/* 精选星标 */
+.photo-row .star svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  transition: fill 0.2s var(--ease), transform 0.2s var(--ease);
+}
+.photo-row .star:hover { color: var(--accent); }
+.photo-row .star:hover svg { transform: scale(1.12); }
+.photo-row .star.on { color: var(--accent); filter: drop-shadow(0 0 6px rgba(160, 140, 106, 0.45)); }
+.photo-row .star.on svg { fill: currentColor; }
+
+/* 删除 */
+.photo-row .del:hover { color: var(--danger); background: rgba(192, 86, 79, 0.12); }
+.photo-row .del svg { width: 15px; height: 15px; }
 
 /* 行内 EXIF 展开面板（覆盖全局 .exif-edit 样式） */
 .photo-row .exif-edit {
   grid-column: 1 / -1;
+  grid-row: 2;
   max-height: 0;
   overflow: hidden;
   opacity: 0;
@@ -585,19 +700,66 @@ button.btn:disabled { opacity: 0.4; cursor: not-allowed; }
 /* ─── 空状态 ─── */
 .empty { text-align: center; padding: 3rem; color: var(--text-faint); font-size: 0.85rem; }
 
-/* ─── 响应式 ─── */
-@media (min-width: 1100px) {
-  #featured-list, #all-list {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.5rem;
-  }
+/* ─── 瀑布流（管理列表） ─── */
+#featured-list, #all-list {
+  columns: 2;
+  column-gap: 0.5rem;
 }
+#featured-list .photo-row,
+#all-list .photo-row {
+  break-inside: avoid;
+  margin-bottom: 0.5rem;
+}
+
+/* 精选空状态（跨列居中） */
+.featured-empty {
+  text-align: center;
+  padding: 1.2rem;
+  color: var(--text-faint);
+  font-size: 0.8rem;
+}
+
+/* ─── 移动主题 ─── */
+.photo-row .move-series:hover { color: var(--accent); }
+.photo-row .move-series svg { width: 15px; height: 15px; }
+
+.move-dropdown {
+  position: fixed;
+  background: rgba(30, 30, 30, 0.92);
+  backdrop-filter: blur(16px) saturate(1.3);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius);
+  padding: 0.3rem 0;
+  min-width: 120px;
+  z-index: 300;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+}
+.move-dropdown button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.4rem 0.9rem;
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.move-dropdown button:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+.move-dropdown button.current { color: var(--accent); cursor: default; }
+
+/* ─── 响应式 ─── */
 @media (max-width: 700px) {
   body { padding: 1rem; }
   .photo-row { grid-template-columns: 72px 1fr auto; }
   .photo-row.featured { grid-template-columns: 18px 72px 1fr auto; }
   .photo-row .thumb { width: 72px; height: 48px; }
+  .photo-row .exif-summary { display: none; }
+  .photo-row .actions-wrap { grid-column: 3; }
+  .photo-row.featured .actions-wrap { grid-column: 4; }
   .preview-grid { columns: 1; }
 }
 </style>
@@ -612,7 +774,7 @@ button.btn:disabled { opacity: 0.4; cursor: not-allowed; }
 <!-- 圆形上传按钮 -->
 <button id="btn-upload-fab" class="fab" title="上传照片">+</button>
 <a href="/admin/dedup" class="fab-secondary" title="照片去重">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M4 16V6a2 2 0 0 1 2-2h10"/></svg>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 22H4a2 2 0 0 1-2-2V6"/><path d="m22 13-1.296-1.296a2.41 2.41 0 0 0-3.408 0L11 18"/><circle cx="12" cy="8" r="2"/><rect width="16" height="16" x="6" y="2" rx="2"/></svg>
   去重
 </a>
 
@@ -623,9 +785,9 @@ button.btn:disabled { opacity: 0.4; cursor: not-allowed; }
       <p>将照片拖入此处，或点击选择文件</p>
       <p class="sub">上传后自动解析 EXIF 信息</p>
     </div>
-    <div id="upload-status"></div>
     <div class="preview-grid" id="preview-grid"></div>
     <div class="confirm-bar" id="confirm-bar" style="display:none;">
+      <span class="bar-info" id="bar-info"></span>
       <button class="btn primary" id="btn-confirm">确认上传</button>
       <button class="btn danger" id="btn-cancel-upload">取消全部</button>
     </div>
@@ -640,6 +802,7 @@ button.btn:disabled { opacity: 0.4; cursor: not-allowed; }
   </div>
 
   <div class="section-label">★ 精选（拖拽排序）</div>
+  <div class="featured-empty" id="featured-empty" style="display:none;">暂无精选照片，在下方点击 ★ 标记</div>
   <div id="featured-list"></div>
 
   <div class="section-label">全部作品</div>
@@ -682,7 +845,6 @@ const fabUpload = document.getElementById('btn-upload-fab');
 const uploadOverlay = document.getElementById('upload-overlay');
 const uploadPanel = document.getElementById('upload-panel');
 const dropZone = document.getElementById('drop-zone');
-const uploadStatus = document.getElementById('upload-status');
 const previewGrid = document.getElementById('preview-grid');
 const confirmBar = document.getElementById('confirm-bar');
 const featuredList = document.getElementById('featured-list');
@@ -727,7 +889,6 @@ dropZone.addEventListener('click', () => {
    上传流程
    ═══════════════════════════════════════════ */
 async function doUpload(files) {
-  uploadStatus.textContent = `正在上传并解析 ${files.length} 张照片…`;
   const formData = new FormData();
   files.forEach(f => formData.append('files', f));
 
@@ -735,19 +896,18 @@ async function doUpload(files) {
     const res = await fetch('/api/photos/upload', { method: 'POST', body: formData });
     if (!res.ok) throw new Error((await res.json()).detail || '上传失败');
     const results = await res.json();
-    pendingUploads = results;
-    uploadStatus.textContent = `已解析 ${results.length} 张照片的 EXIF 信息，请确认后入库。`;
+    pendingUploads = pendingUploads.concat(results);
+    showToast(`已解析 ${results.length} 张`);
     renderPreviews();
   } catch (e) {
-    uploadStatus.textContent = '上传失败: ' + e.message;
-    uploadStatus.style.color = 'var(--danger)';
-    setTimeout(() => { uploadStatus.style.color = ''; }, 4000);
+    showToast('上传失败: ' + e.message);
   }
 }
 
 function renderPreviews() {
   previewGrid.innerHTML = '';
   confirmBar.style.display = pendingUploads.length ? 'flex' : 'none';
+  document.getElementById('bar-info').textContent = pendingUploads.length ? `待上传 ${pendingUploads.length} 张` : '';
 
   pendingUploads.forEach((photo, i) => {
     const exif = photo.exif || {};
@@ -756,7 +916,10 @@ function renderPreviews() {
     const card = document.createElement('div');
     card.className = 'preview-card';
     card.innerHTML = `
-      <div class="thumb-wrap"><img src="${getThumb(photo)}" alt=""></div>
+      <div class="thumb-wrap">
+        <img src="${getThumb(photo)}" alt="">
+        <button class="preview-remove" data-idx="${i}" title="移除这张">&times;</button>
+      </div>
       <div class="card-body">
         <div class="exif-line" title="${escapeHtml(exifParts.join(' | '))}">${escapeHtml(exifParts.join(' · ') || '无 EXIF 信息')}</div>
         <input type="text" value="${escapeHtml(photo.title)}" placeholder="标题" data-idx="${i}" data-field="title">
@@ -764,11 +927,13 @@ function renderPreviews() {
         <select data-idx="${i}" data-field="series">
           ${SERIES.map(s => `<option value="${s.id}" ${photo.series === s.id ? 'selected' : ''}>${s.name}</option>`).join('')}
         </select>
-        <label class="featured-toggle">
-          <input type="checkbox" data-idx="${i}" data-field="featured" ${photo.featured ? 'checked' : ''}>
-          设为精选
-        </label>
-        <div class="exif-toggle" data-idx="${i}">▸ 编辑 EXIF</div>
+        <div class="card-footer-row">
+          <div class="featured-toggle ${photo.featured ? 'on' : ''}" data-idx="${i}">
+            <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+            设为精选
+          </div>
+          <div class="exif-toggle" data-idx="${i}"><svg class="exif-toggle-arrow" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg><span class="exif-toggle-label">编辑 EXIF</span></div>
+        </div>
         <div class="exif-edit" id="exif-edit-${i}">
           <div class="exif-grid">
             <div class="exif-field"><label>相机</label><input type="text" value="${escapeHtml(exif.camera || '')}" data-idx="${i}" data-exif="camera"></div>
@@ -785,12 +950,34 @@ function renderPreviews() {
     previewGrid.appendChild(card);
   });
 
+  // 单张移除
+  previewGrid.querySelectorAll('.preview-remove').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.idx);
+      const photo = pendingUploads[idx];
+      try { await fetch(`/api/photos/${photo.id}`, { method: 'DELETE' }); } catch (_) {}
+      pendingUploads.splice(idx, 1);
+      renderPreviews();
+    });
+  });
+
   // 绑定编辑
   previewGrid.querySelectorAll('[data-field]').forEach(el => {
     el.addEventListener('change', () => {
       const idx = parseInt(el.dataset.idx);
       const field = el.dataset.field;
-      pendingUploads[idx][field] = field === 'featured' ? el.checked : el.value;
+      pendingUploads[idx][field] = el.value;
+    });
+  });
+
+  // 精选星标切换
+  previewGrid.querySelectorAll('.featured-toggle').forEach(el => {
+    el.addEventListener('click', () => {
+      const idx = parseInt(el.dataset.idx);
+      const newState = !pendingUploads[idx].featured;
+      pendingUploads[idx].featured = newState;
+      el.classList.toggle('on', newState);
     });
   });
 
@@ -800,7 +987,8 @@ function renderPreviews() {
       const idx = el.dataset.idx;
       const panel = document.getElementById('exif-edit-' + idx);
       const isOpen = panel.classList.toggle('open');
-      el.textContent = isOpen ? '▾ 收起 EXIF' : '▸ 编辑 EXIF';
+      el.classList.toggle('open', isOpen);
+      el.querySelector('.exif-toggle-label').textContent = isOpen ? '收起 EXIF' : '编辑 EXIF';
     });
   });
 
@@ -839,7 +1027,6 @@ document.getElementById('btn-confirm').addEventListener('click', async () => {
   pendingUploads = [];
   previewGrid.innerHTML = '';
   confirmBar.style.display = 'none';
-  uploadStatus.textContent = '';
   closeUploadModal();
   loadManage();
 });
@@ -852,9 +1039,8 @@ document.getElementById('btn-cancel-upload').addEventListener('click', async () 
   pendingUploads = [];
   previewGrid.innerHTML = '';
   confirmBar.style.display = 'none';
-  uploadStatus.textContent = '已取消';
   closeUploadModal();
-  setTimeout(() => { uploadStatus.textContent = ''; }, 2000);
+  showToast('已取消');
 });
 
 /* ═══════════════════════════════════════════
@@ -962,12 +1148,10 @@ function renderManage() {
   const rest = allPhotos;
 
   manageEmpty.style.display = allPhotos.length ? 'none' : 'block';
+  document.getElementById('featured-empty').style.display = featured.length ? 'none' : 'block';
 
   // 精选列表（可拖拽排序）
   featuredList.innerHTML = '';
-  if (featured.length === 0) {
-    featuredList.innerHTML = '<div class="empty" style="padding:1rem;">暂无精选照片，在下方点击 ★ 标记</div>';
-  }
   featured.forEach((photo, index) => {
     featuredList.appendChild(createRow(photo, index, true));
   });
@@ -977,6 +1161,73 @@ function renderManage() {
   rest.forEach((photo) => {
     allList.appendChild(createRow(photo, -1, false));
   });
+}
+
+/* ═══════════════════════════════════════════
+   EXIF 展开/收起动画（FLIP + Web Animations API）
+   多列（columns）布局重排、以及展开精选卡片时
+   下方「全部作品」区域被整体下推，均无法用 CSS 过渡。
+   做法：先记录各元素位置（FIRST）→瞬间切到最终态（LAST）
+   →用 element.animate() 从旧位置平滑滑向新位置。
+   用 WAAPI 而非手动 transition，避免过渡触发时机问题与残留内联样式，
+   展开与收起双向均能平滑动画。
+   ═══════════════════════════════════════════ */
+function animateExifToggle(exifPanel, exifSummaryEl) {
+  const scope = document.getElementById('manage-view');
+  const willOpen = !exifPanel.classList.contains('open');
+
+  // 尊重系统「减弱动态效果」偏好：直接切换，不做位移动画
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!scope || reduce) {
+    exifPanel.classList.toggle('open', willOpen);
+    exifSummaryEl.classList.toggle('open', willOpen);
+    return;
+  }
+
+  // 与全局 UI 保持一致的缓动函数（取 --ease 的实际值，WAAPI 不能直接用 var()）
+  const ease = getComputedStyle(document.documentElement).getPropertyValue('--ease').trim()
+            || 'cubic-bezier(0.25, 0.1, 0.25, 1)';
+
+  // 参与位移动画的元素：两个列表内的卡片 + 分区标签 + 空状态
+  // （精选区展开会把「全部作品」标签及其列表整体下推，一并纳入动画）
+  const els = Array.from(scope.querySelectorAll(
+    '.section-label, .featured-empty, #manage-empty, #featured-list > .photo-row, #all-list > .photo-row'
+  )).filter(el => el.offsetParent !== null);
+
+  // 结束仍在进行的动画，保证位置测量准确（避免快速连点时 transform 叠加）
+  els.forEach(el => el.getAnimations().forEach(a => a.finish()));
+  exifPanel.getAnimations().forEach(a => a.finish());
+
+  // FIRST：记录动画前各元素位置
+  const firstRects = els.map(el => el.getBoundingClientRect());
+
+  // 瞬间切到最终状态（临时禁用面板过渡），让 columns 布局与下游区块一次性排布到位
+  exifPanel.style.transition = 'none';
+  exifPanel.classList.toggle('open', willOpen);
+  exifSummaryEl.classList.toggle('open', willOpen);
+  void scope.offsetWidth;
+  // 下一帧恢复面板的 CSS 过渡声明（类已应用，不会再触发动画）
+  requestAnimationFrame(() => { exifPanel.style.transition = ''; });
+
+  // LAST + PLAY：用 WAAPI 让每个移动过的元素从旧位置平滑滑向新位置
+  els.forEach((el, i) => {
+    const b = el.getBoundingClientRect();
+    const dx = firstRects[i].left - b.left;
+    const dy = firstRects[i].top - b.top;
+    if (!dx && !dy) return;
+    el.animate(
+      [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0, 0)' }],
+      { duration: 400, easing: ease }
+    );
+  });
+
+  // 面板内容淡入（展开时），柔化面板瞬间展开
+  if (willOpen) {
+    exifPanel.animate(
+      [{ opacity: 0 }, { opacity: 1 }],
+      { duration: 340, easing: 'ease' }
+    );
+  }
 }
 
 function createRow(photo, featuredIdx, isFeaturedSection) {
@@ -1000,11 +1251,13 @@ function createRow(photo, featuredIdx, isFeaturedSection) {
       <input type="text" value="${escapeHtml(photo.location || '')}" placeholder="地点" data-field="location">
     </div>
     <div class="actions-wrap">
-      <button class="star ${photo.featured ? 'on' : ''}" title="精选">★</button>
+      <button class="star ${photo.featured ? 'on' : ''}" title="精选"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+      <button class="move-series" title="移动主题"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-8"/><path d="M2 13h10"/><path d="m5 10-3 3 3 3"/></svg></button>
       <button class="del" title="删除"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14zM10 11v6M14 11v6"/></svg></button>
     </div>
     <div class="exif-summary">
-      ${escapeHtml(exifSummary)} ${photo.date_taken ? '· ' + photo.date_taken : ''} <span style="opacity:0.6">▸</span>
+      <span class="exif-text">${escapeHtml(exifSummary) || '—'}<br>${photo.date_taken ? escapeHtml(photo.date_taken) : ''}</span>
+      <span class="exif-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
     </div>
   `;
 
@@ -1024,9 +1277,10 @@ function createRow(photo, featuredIdx, isFeaturedSection) {
     </div>
   `;
 
-  // EXIF 折叠切换
-  row.querySelector('.exif-summary').addEventListener('click', () => {
-    exifPanel.classList.toggle('open');
+  // EXIF 折叠切换（FLIP 平滑重排动画）
+  const exifSummaryEl = row.querySelector('.exif-summary');
+  exifSummaryEl.addEventListener('click', () => {
+    animateExifToggle(exifPanel, exifSummaryEl);
   });
 
   // EXIF 字段编辑 → PATCH API
@@ -1071,7 +1325,7 @@ function createRow(photo, featuredIdx, isFeaturedSection) {
   row.querySelector('.star').addEventListener('click', async (e) => {
     const newState = !photo.featured;
     photo.featured = newState;
-    e.target.classList.toggle('on', newState);
+    e.currentTarget.classList.toggle('on', newState);
     await fetch(`/api/photos/${photo.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -1089,6 +1343,44 @@ function createRow(photo, featuredIdx, isFeaturedSection) {
     allPhotos = allPhotos.filter(p => p.id !== photo.id);
     renderManage();
     showToast('已删除');
+  });
+
+  // 移动主题
+  const moveBtn = row.querySelector('.move-series');
+  moveBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    // 关闭其他已打开的下拉
+    document.querySelectorAll('.move-dropdown').forEach(d => d.remove());
+    const rect = moveBtn.getBoundingClientRect();
+    const dropdown = document.createElement('div');
+    dropdown.className = 'move-dropdown';
+    dropdown.style.top = (rect.bottom + 4) + 'px';
+    dropdown.style.left = Math.max(8, rect.right - 120) + 'px';
+    SERIES.forEach(s => {
+      const btn = document.createElement('button');
+      btn.textContent = s.name;
+      if (s.id === currentManageSeries) btn.classList.add('current');
+      btn.addEventListener('click', async (ev) => {
+        ev.stopPropagation();
+        dropdown.remove();
+        if (s.id === currentManageSeries) return;
+        await fetch(`/api/photos/${photo.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ series: s.id }),
+        });
+        allPhotos = allPhotos.filter(p => p.id !== photo.id);
+        renderManage();
+        showToast(`已移至「${s.name}」`);
+      });
+      dropdown.appendChild(btn);
+    });
+    document.body.appendChild(dropdown);
+    // 点击外部关闭
+    const closeDropdown = (ev) => {
+      if (!dropdown.contains(ev.target) && ev.target !== moveBtn) { dropdown.remove(); document.removeEventListener('click', closeDropdown); }
+    };
+    setTimeout(() => document.addEventListener('click', closeDropdown), 0);
   });
 
   // 拖拽排序（仅精选区）
@@ -1238,6 +1530,13 @@ function showPrompt(msg, placeholder) {
   if (SERIES.length) currentManageSeries = SERIES[0].id;
   renderSeriesTabs();
   loadManage();
+
+  // 窗口缩放时重新布局
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => layoutAll(true), 100);
+  });
 })();
 </script>
 </body>

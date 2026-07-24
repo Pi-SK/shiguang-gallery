@@ -14,6 +14,22 @@ backup/
 .DS_Store
 Thumbs.db
 
+# 桌面端打包（WPF/PyInstaller）
+launcher.py
+desktop.spec
+build_desktop.bat
+
+# 构建产物
+build/
+dist/
+bin/
+obj/
+
+# 调试临时文件
+dwm_test_result.txt
+events_debug.txt
+hwnd_debug.txt
+
 # IDE / 工具
 .vscode/
 .claude/

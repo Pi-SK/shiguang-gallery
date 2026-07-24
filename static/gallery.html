@@ -177,11 +177,15 @@
 
       .admin-icon {
         color: var(--text-faint);
-        margin-left: 0.8rem;
+        margin-left: -0.5rem;
         display: inline-flex;
         align-items: center;
-        transition: color 0.3s;
+        opacity: 0;
+        transition: opacity 0.4s var(--ease), color 0.3s;
         text-decoration: none;
+      }
+      #nav:hover .admin-icon {
+        opacity: 1;
       }
       .admin-icon:hover {
         color: var(--text-secondary);
@@ -222,7 +226,7 @@
         max-width: 92vw;
         max-height: 88vh;
         object-fit: contain;
-        opacity: 0;
+        opacity: 0.55;
         transform: scale(1);
         transition:
           opacity var(--duration) var(--ease),
@@ -233,6 +237,11 @@
       #photo-stage img.loaded {
         opacity: 1;
         transform: scale(1.02);
+      }
+      /* 无照片可显示时（如某主题无精选）彻底隐藏主图，
+         避免上一主题的残留照片透出（基态 opacity 为 0.55 不足以隐藏） */
+      #photo-stage img.blank {
+        opacity: 0;
       }
 
       #photo-stage .placeholder {
@@ -336,35 +345,58 @@
         opacity: 1;
       }
 
-      /* ═══ 箭头 ═══ */
+      /* ═══ 上一张 / 下一张 导航按钮（无边框/填充，仅悬停时浮现，保持画面聚焦） ═══ */
       .arrow-hint {
         position: fixed;
         top: 50%;
         transform: translateY(-50%);
-        z-index: 30;
-        width: 40px;
-        height: 40px;
+        z-index: 46;
+        /* 悬停热区扩大到屏幕左/右约 1/5 宽；上下预留出导航栏与底部信息/计数器的空间，避免遮挡其点击 */
+        width: 20vw;
+        height: calc(100vh - 16rem);
+        border: none;
+        background: none;
+        padding: 0 2.2rem;
         display: flex;
         align-items: center;
-        justify-content: center;
         cursor: pointer;
+        color: var(--text-secondary);
         opacity: 0;
-        transition: opacity 0.4s var(--ease);
-        color: var(--text-faint);
-        font-size: 1.2rem;
-        user-select: none;
+        pointer-events: none;
+        transition:
+          opacity 0.45s var(--ease),
+          color 0.3s var(--ease);
+        -webkit-tap-highlight-color: transparent;
       }
-      .arrow-hint:hover {
-        opacity: 0.6;
+      .arrow-hint svg {
+        width: 26px;
+        height: 26px;
+        filter: drop-shadow(0 1px 5px rgba(0, 0, 0, 0.55));
       }
-      #slideshow:hover .arrow-hint {
-        opacity: 0.25;
+      /* 已进入且非卡片模式时“待命”：可交互，但默认不可见 */
+      .arrow-hint.armed {
+        pointer-events: auto;
+      }
+      /* 桌面端：仅在悬停时浮现，避免干扰画面 */
+      @media (hover: hover) and (pointer: fine) {
+        .arrow-hint.armed:hover {
+          opacity: 1;
+          color: var(--text-primary);
+        }
+      }
+      /* 触摸端无悬停：随导航栏一同浮现 */
+      @media (hover: none), (pointer: coarse) {
+        .arrow-hint.armed.nav-on {
+          opacity: 0.65;
+        }
       }
       #arrow-left {
-        left: 1.5rem;
+        left: 0;
+        justify-content: flex-start;
       }
       #arrow-right {
-        right: 1.5rem;
+        right: 0;
+        justify-content: flex-end;
       }
 
       /* ═══ 向下按钮 ═══ */
@@ -551,7 +583,10 @@
         display: flex;
         align-items: center;
         gap: 3rem;
-        padding: 2rem 4rem;
+        /* 两侧留白取容器一半宽度：配合 scroll-snap-align:center，
+           让每一张卡片（含首/末张）都能真正滚到正中，避免末尾多张卡片
+           被钳制在同一 maxScroll 位置而导致滚轮/按钮无法继续回滚 */
+        padding: 2rem 50%;
         overflow-x: auto;
         overflow-y: hidden;
         scroll-snap-type: x mandatory;
@@ -590,6 +625,12 @@
         height: auto;
         object-fit: contain;
       }
+      /* 图片 + 浮出式 EXIF 面板的定位容器 */
+      .stack-card .card-media {
+        position: relative;
+        display: block;
+        overflow: hidden;
+      }
       .stack-card .card-info {
         padding: 0.9rem 1.2rem;
         display: flex;
@@ -612,6 +653,64 @@
         color: var(--text-faint);
         letter-spacing: 0.03em;
         white-space: nowrap;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        transition: color 0.3s;
+      }
+      .stack-card .card-exif:hover,
+      .stack-card .card-exif.open {
+        color: var(--text-secondary);
+      }
+      .stack-card .card-exif .exif-chevron {
+        width: 9px;
+        height: 9px;
+        margin-left: 0.35rem;
+        vertical-align: middle;
+        transition: transform 0.35s var(--ease);
+      }
+      .stack-card .card-exif.open .exif-chevron {
+        transform: rotate(180deg);
+      }
+      /* 从图片右下角轻轻上浮的圆角矩形 EXIF 面板（不改变卡片尺寸） */
+      .stack-card .card-exif-panel {
+        position: absolute;
+        right: 0.9rem;
+        bottom: 0.9rem;
+        left: auto;
+        max-width: calc(100% - 1.8rem);
+        padding: 0.85rem 1rem;
+        border-radius: 10px;
+        display: grid;
+        grid-template-columns: auto auto;
+        gap: 0.35rem 1rem;
+        background: rgba(10, 10, 10, 0.8);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 10px 34px rgba(0, 0, 0, 0.45);
+        opacity: 0;
+        transform: translateY(10px) scale(0.98);
+        transform-origin: bottom right;
+        pointer-events: none;
+        transition:
+          transform 0.35s var(--ease),
+          opacity 0.35s var(--ease);
+      }
+      .stack-card .card-exif-panel.open {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        pointer-events: auto;
+      }
+      .stack-card .card-exif-panel .exif-label {
+        color: var(--text-faint);
+        font-size: 0.62rem;
+        letter-spacing: 0.05em;
+        white-space: nowrap;
+      }
+      .stack-card .card-exif-panel .exif-value {
+        color: var(--text-primary);
+        font-size: 0.62rem;
+        letter-spacing: 0.03em;
       }
 
       /* 卡片模式底部导航：上一张 + 计数器 + 下一张 */
@@ -748,18 +847,35 @@
           max-height: 82vh;
         }
         .arrow-hint {
-          display: none;
+          width: 48px;
+          height: 72px;
+          padding: 0;
+          justify-content: center;
+        }
+        #arrow-left {
+          left: 0.4rem;
+        }
+        #arrow-right {
+          right: 0.4rem;
         }
         #cover .enter-hint {
           bottom: 2rem;
         }
         #cards-container {
-          padding: 1.5rem 2rem;
+          padding: 1.5rem 50%;
           gap: 2rem;
         }
         .stack-card .card-image {
           max-height: 55vh;
           max-width: 85vw;
+        }
+        .stack-card .card-exif-panel {
+          padding: 0.8rem 1rem;
+          gap: 0.35rem 0.8rem;
+        }
+        .stack-card .card-exif-panel .exif-label,
+        .stack-card .card-exif-panel .exif-value {
+          font-size: 0.6rem;
         }
         #cards-header {
           padding: 1rem 1.2rem;
@@ -833,17 +949,12 @@
         <div class="placeholder" aria-hidden="true"></div>
         <img id="main-photo" src="" alt="" draggable="false" />
       </div>
-      <div class="arrow-hint" id="arrow-left" role="button" aria-label="上一张">
-        ‹
-      </div>
-      <div
-        class="arrow-hint"
-        id="arrow-right"
-        role="button"
-        aria-label="下一张"
-      >
-        ›
-      </div>
+      <button class="arrow-hint" id="arrow-left" aria-label="上一张">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <button class="arrow-hint" id="arrow-right" aria-label="下一张">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
     </main>
 
     <!-- 作品信息 -->
@@ -1083,32 +1194,40 @@
 
         const img = new Image();
         img.onload = () => {
+          // 无过渡地重置到干净起点（opacity:0 / scale(1)），再触发过渡：
+          // 否则缓存命中或上一次过渡未完成时，起点已接近 scale(1.02)/opacity1，
+          // 导致本次缩放+淡入动画几乎不可见（这正是动画“经常不出现”的根因）。
+          mainPhoto.style.transition = "none";
+          mainPhoto.classList.remove("loaded", "blank");
           mainPhoto.src = getSrc(photo);
           mainPhoto.alt =
             photo.title + (photo.location ? "，" + photo.location : "");
+          void mainPhoto.offsetWidth; // 强制回流，提交无过渡的起始态
           requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              mainPhoto.classList.add("loaded");
-              updateInfo(photo);
-              isTransitioning = false;
-            });
+            mainPhoto.style.transition = ""; // 恢复 CSS 过渡
+            mainPhoto.classList.add("loaded"); // 触发 opacity + scale 过渡
+            updateInfo(photo);
+            isTransitioning = false;
           });
           preloadAdjacent();
         };
         img.onerror = () => {
+          mainPhoto.style.transition = "none";
+          mainPhoto.classList.remove("loaded", "blank");
           mainPhoto.src = getSrc(photo);
-          mainPhoto.classList.add("loaded");
-          updateInfo(photo);
-          isTransitioning = false;
+          void mainPhoto.offsetWidth;
+          requestAnimationFrame(() => {
+            mainPhoto.style.transition = "";
+            mainPhoto.classList.add("loaded");
+            updateInfo(photo);
+            isTransitioning = false;
+          });
         };
         img.src = getSrc(photo);
       }
 
-      function updateInfo(photo) {
-        photoInfo.querySelector(".photo-title").textContent = photo.title;
-        photoInfo.querySelector(".photo-location").textContent =
-          photo.location || "";
-
+      /* 从照片数据提取完整 EXIF 行（标签/值），幻灯片与卡片模式共用，保证一致 */
+      function buildExifRows(photo) {
         const exif = photo.exif || {};
         const rows = [];
         if (exif.camera) rows.push(["相机", exif.camera]);
@@ -1118,6 +1237,15 @@
         if (exif.shutter_speed) rows.push(["快门", exif.shutter_speed]);
         if (exif.iso) rows.push(["感光度", exif.iso]);
         if (photo.date_taken) rows.push(["拍摄时间", photo.date_taken]);
+        return rows;
+      }
+
+      function updateInfo(photo) {
+        photoInfo.querySelector(".photo-title").textContent = photo.title;
+        photoInfo.querySelector(".photo-location").textContent =
+          photo.location || "";
+
+        const rows = buildExifRows(photo);
 
         const hint = photoInfo.querySelector(".exif-hint");
         if (rows.length > 0) {
@@ -1199,6 +1327,7 @@
         closeExif();
         slideshow.classList.add("blurred");
         cardsLayer.classList.add("active");
+        updateArrows();
       }
 
       function exitCardsMode() {
@@ -1206,6 +1335,9 @@
         cardsLayer.classList.remove("active");
         slideshow.classList.remove("blurred");
         cardsContainer.scrollLeft = 0;
+        // 无精选（currentList 为空）时彻底隐藏主图，
+        // 防止退出卡片模式后露出上一主题的残留照片
+        mainPhoto.classList.toggle("blank", currentList.length === 0);
         if (currentList.length > 0) {
           photoInfo.classList.add("visible");
           photoCounter.classList.add("visible");
@@ -1216,6 +1348,7 @@
             noFeaturedHint.classList.add("visible");
           }
         }
+        updateArrows();
       }
 
       function renderCards(photos) {
@@ -1229,18 +1362,37 @@
             exif.iso,
           ].filter(Boolean);
 
+          const rows = buildExifRows(photo);
+          const hasExif = rows.length > 0;
+          const summaryText = exifParts.join("  ") || (hasExif ? "拍摄参数" : "");
+          const chevron = `<svg class="exif-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>`;
+          const panelHTML = hasExif
+            ? `<div class="card-exif-panel">${rows
+                .map(
+                  ([l, v]) =>
+                    `<span class="exif-label">${l}</span><span class="exif-value">${v}</span>`,
+                )
+                .join("")}</div>`
+            : "";
+          const summaryHTML = hasExif
+            ? `<span class="card-exif" role="button" tabindex="0" aria-expanded="false" aria-label="展开拍摄参数">${summaryText}${chevron}</span>`
+            : "";
+
           const tilt = (Math.random() * 5 - 2.5).toFixed(1);
           const card = document.createElement("article");
           card.className = "stack-card";
           card.style.setProperty("--tilt", tilt + "deg");
           card.innerHTML = `
-            <img class="card-image" src="/assets/${photo.filename}" alt="${photo.title}" loading="lazy">
+            <div class="card-media">
+              <img class="card-image" src="/assets/${photo.filename}" alt="${photo.title}" loading="lazy">
+              ${panelHTML}
+            </div>
             <div class="card-info">
               <div>
                 <span class="card-title">${photo.title}</span>
                 ${photo.location ? `<span class="card-location"> · ${photo.location}</span>` : ""}
               </div>
-              <span class="card-exif">${exifParts.join("  ")}</span>
+              ${summaryHTML}
             </div>
           `;
           cardsContainer.appendChild(card);
@@ -1261,9 +1413,11 @@
       let isDragging = false;
       let dragStartX = 0;
       let dragScrollLeft = 0;
+      let dragMoved = false;
 
       cardsContainer.addEventListener("mousedown", (e) => {
         isDragging = true;
+        dragMoved = false;
         dragStartX = e.pageX;
         dragScrollLeft = cardsContainer.scrollLeft;
         cardsContainer.classList.add("grabbing");
@@ -1275,6 +1429,7 @@
 
       document.addEventListener("mousemove", (e) => {
         if (!isDragging) return;
+        if (Math.abs(e.pageX - dragStartX) > 4) dragMoved = true;
         cardsContainer.scrollLeft = dragScrollLeft - (e.pageX - dragStartX);
       });
 
@@ -1300,6 +1455,17 @@
       function getCurrentCardIndex() {
         const cards = cardsContainer.querySelectorAll(".stack-card");
         if (cards.length === 0) return 0;
+
+        /* 容器两侧留白 + scroll-snap-align:center 下，首/末卡片无法真正
+           滚到正中（居中所需的 scrollLeft 会被钳制到 0 或 maxScroll）。
+           此时纯「离视口中心最近」判断会误选到中间的卡片——尤其首张竖屏、
+           次张横屏时，横屏卡片中心反而更靠近视口中心。故先钳制两端： */
+        const maxScroll =
+          cardsContainer.scrollWidth - cardsContainer.clientWidth;
+        if (cardsContainer.scrollLeft <= 2) return 0;
+        if (maxScroll > 0 && cardsContainer.scrollLeft >= maxScroll - 2)
+          return cards.length - 1;
+
         const center =
           cardsContainer.scrollLeft + cardsContainer.offsetWidth / 2;
         let closest = 0,
@@ -1338,6 +1504,49 @@
 
       cardsContainer.addEventListener("scroll", updateCardsCounter);
 
+      /* ── 卡片模式：点击 EXIF 摘要 → 向上浮出完整 EXIF 面板（单开） ── */
+      function toggleCardExif(summary) {
+        const card = summary.closest(".stack-card");
+        const panel = card && card.querySelector(".card-exif-panel");
+        if (!panel) return;
+        const willOpen = !panel.classList.contains("open");
+        // 单开：展开一张时收起其他已展开的面板
+        if (willOpen) {
+          cardsContainer
+            .querySelectorAll(".card-exif-panel.open")
+            .forEach((p) => {
+              p.classList.remove("open");
+              const t = p
+                .closest(".stack-card")
+                .querySelector(".card-exif");
+              if (t) {
+                t.classList.remove("open");
+                t.setAttribute("aria-expanded", "false");
+              }
+            });
+        }
+        panel.classList.toggle("open", willOpen);
+        summary.classList.toggle("open", willOpen);
+        summary.setAttribute("aria-expanded", willOpen ? "true" : "false");
+      }
+
+      cardsContainer.addEventListener("click", (e) => {
+        const summary = e.target.closest(".card-exif");
+        if (!summary) return;
+        if (dragMoved) return; // 刚刚是拖拽滚动，非点击
+        e.stopPropagation();
+        toggleCardExif(summary);
+      });
+
+      cardsContainer.addEventListener("keydown", (e) => {
+        const summary = e.target.closest(".card-exif");
+        if (!summary) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          toggleCardExif(summary);
+        }
+      });
+
       /* ═══════════════════════════════════════════
          系列切换
          ═══════════════════════════════════════════ */
@@ -1350,6 +1559,7 @@
 
         // 立即隐藏当前照片，防止切换时闪现旧系列内容
         mainPhoto.classList.remove("loaded");
+        mainPhoto.classList.add("blank");
         photoInfo.classList.remove("visible");
         photoCounter.classList.remove("visible");
         scrollDownBtn.classList.remove("visible");
@@ -1396,6 +1606,7 @@
           } else if (photos.length === 0) {
             currentList = [];
             mainPhoto.classList.remove("loaded");
+            mainPhoto.classList.add("blank");
             photoInfo.classList.remove("visible");
             photoCounter.classList.remove("visible");
             scrollDownBtn.classList.remove("visible");
@@ -1407,6 +1618,7 @@
             showPhoto(0);
             scrollDownBtn.classList.toggle("visible", series !== "featured");
           }
+          updateArrows();
         }, 1200);
       }
 
@@ -1420,6 +1632,7 @@
         if (allPhotos.length === 0) {
           currentList = [];
           mainPhoto.classList.remove("loaded");
+          mainPhoto.classList.add("blank");
           photoInfo.classList.remove("visible");
           photoCounter.classList.remove("visible");
           scrollDownBtn.classList.remove("visible");
@@ -1432,6 +1645,7 @@
           seriesEmpty.classList.remove("visible");
           currentList = [];
           mainPhoto.classList.remove("loaded");
+          mainPhoto.classList.add("blank");
           photoInfo.classList.remove("visible");
           photoCounter.classList.remove("visible");
           closeExif();
@@ -1450,9 +1664,21 @@
       function showNav() {
         nav.classList.add("visible");
         document.body.style.cursor = "default";
+        updateArrows();
       }
       function hideNav() {
         nav.classList.remove("visible");
+        updateArrows();
+      }
+      /* 侧边上/下一张按钮：entered且非卡片模式、多于一张时“待命”（可交互）；
+         桌面端仅悬停时浮现（CSS 控制），触摸端随导航栏(nav-on)浮现 */
+      function updateArrows() {
+        const active = entered && !cardsMode && currentList.length > 1;
+        const navVisible = nav.classList.contains("visible");
+        arrowLeft.classList.toggle("armed", active);
+        arrowRight.classList.toggle("armed", active);
+        arrowLeft.classList.toggle("nav-on", active && navVisible);
+        arrowRight.classList.toggle("nav-on", active && navVisible);
       }
       function scheduleNavHide() {
         clearTimeout(navTimer);
@@ -1509,6 +1735,10 @@
         (e) => {
           touchStartX = e.touches[0].clientX;
           touchStartY = e.touches[0].clientY;
+          if (entered && !cardsMode) {
+            showNav();
+            scheduleNavHide();
+          }
         },
         { passive: true },
       );
