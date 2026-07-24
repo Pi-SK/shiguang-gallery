@@ -7,8 +7,9 @@ __pycache__/
 assets/
 data/
 
-# 备份
+# 备份与私有文档
 backup/
+doc/
 
 # 系统文件
 .DS_Store
