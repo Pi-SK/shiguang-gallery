@@ -72,7 +72,7 @@
 前往本仓库的 [**Releases**](https://github.com/Pi-SK/shiguang-gallery/releases) 页面，下载最新的 Windows 安装包：
 
 ```
-拾光 · 画廊_2.0.0_x64-setup.exe
+ShiGuang-Gallery_2.0.0_x64-setup.exe
 ```
 
 双击安装即可。首次启动时选择（或新建）你的照片库目录，也可以先载入内置示例作品集感受一番。
