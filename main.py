@@ -22,7 +22,8 @@ BASE_DIR = Path(__file__).resolve().parent
 ASSETS_DIR = BASE_DIR / "assets"
 THUMBS_DIR = ASSETS_DIR / "thumbs"
 DATA_DIR = BASE_DIR / "data"
-STATIC_DIR = BASE_DIR / "static"
+# 阶段 1 起页面改由 frontend/ 提供（旧 static/ 保留作回退基线）
+FRONTEND_DIR = BASE_DIR / "frontend"
 PHOTOS_JSON = DATA_DIR / "photos.json"
 SERIES_JSON = DATA_DIR / "series.json"
 
@@ -199,6 +200,8 @@ class SeriesRename(BaseModel):
 
 app = FastAPI(title="拾光 · 摄影画廊", version="2.0.0")
 app.mount("/assets", StaticFiles(directory=str(ASSETS_DIR)), name="assets")
+app.mount("/css", StaticFiles(directory=str(FRONTEND_DIR / "css")), name="css")
+app.mount("/js", StaticFiles(directory=str(FRONTEND_DIR / "js")), name="js")
 
 
 # ─── 页面路由 ───────────────────────────────────────────
@@ -210,17 +213,17 @@ async def root():
 
 @app.get("/gallery")
 async def index():
-    return FileResponse(str(STATIC_DIR / "gallery.html"))
+    return FileResponse(str(FRONTEND_DIR / "gallery.html"))
 
 
 @app.get("/admin")
 async def admin_page():
-    return FileResponse(str(STATIC_DIR / "admin.html"))
+    return FileResponse(str(FRONTEND_DIR / "admin.html"))
 
 
 @app.get("/admin/dedup")
 async def dedup_page():
-    return FileResponse(str(STATIC_DIR / "dedup.html"))
+    return FileResponse(str(FRONTEND_DIR / "dedup.html"))
 
 
 # ─── API ────────────────────────────────────────────────

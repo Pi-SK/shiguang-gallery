@@ -1,0 +1,300 @@
+/* ═══════════════════════════════════════════
+   dedup.css — 照片去重页样式（设计令牌见 tokens.css）
+   ═══════════════════════════════════════════ */
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { font-size: 14px; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.12) transparent; }
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); }
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 2rem;
+  line-height: 1.6;
+}
+
+/* ─── 头部 ─── */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+header h1 { font-size: 1.2rem; font-weight: 400; letter-spacing: 0.1em; }
+header .links a { color: var(--text-dim); text-decoration: none; font-size: 0.75rem; margin-left: 1rem; transition: color 0.3s; }
+header .links a:hover { color: var(--text); }
+
+/* ─── 统计 ─── */
+.summary {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-bottom: 2rem;
+  letter-spacing: 0.03em;
+}
+
+/* ─── 系列分组 ─── */
+.series-section { margin-bottom: 2.5rem; }
+.series-section h2 {
+  font-size: 0.85rem;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ─── 重复组 ─── */
+.dup-group {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.2rem;
+  margin-bottom: 1rem;
+  transition: border-color 0.3s;
+}
+.dup-group.resolved {
+  opacity: 0.4;
+  pointer-events: none;
+  border-color: var(--success);
+}
+.dup-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.8rem;
+}
+.dup-group-header .dup-label {
+  font-size: 0.7rem;
+  color: var(--text-faint);
+  letter-spacing: 0.05em;
+}
+.dup-group-header .dup-exif {
+  font-size: 0.65rem;
+  color: var(--text-faint);
+}
+
+.dup-items {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.dup-item {
+  position: relative;
+  border: 2px solid transparent;
+  border-radius: var(--radius);
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.3s, transform 0.2s var(--ease);
+  flex: 0 0 auto;
+}
+.dup-item:hover { transform: translateY(-2px); }
+.dup-item.selected { border-color: var(--accent); }
+.dup-item.selected::after {
+  content: '保留';
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  font-size: 0.6rem;
+  background: var(--accent);
+  color: #111;
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  letter-spacing: 0.05em;
+}
+
+.dup-item img {
+  display: block;
+  height: 140px;
+  width: auto;
+  max-width: 220px;
+  object-fit: cover;
+}
+.dup-item .item-info {
+  padding: 0.5rem 0.6rem;
+  background: var(--surface);
+}
+.dup-item .item-title {
+  font-size: 0.72rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+.dup-item .item-meta {
+  font-size: 0.6rem;
+  color: var(--text-faint);
+  margin-top: 0.15rem;
+}
+
+/* ─── 操作按钮 ─── */
+.dup-actions {
+  margin-top: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+.btn-delete-others {
+  font-size: 0.7rem;
+  padding: 0.35rem 0.8rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--danger);
+  background: transparent;
+  color: var(--danger);
+  cursor: pointer;
+  transition: background 0.3s, color 0.3s;
+  letter-spacing: 0.03em;
+}
+.btn-delete-others:hover { background: var(--danger); color: #fff; }
+.btn-delete-others:disabled { opacity: 0.3; cursor: default; }
+.btn-delete-others:disabled:hover { background: transparent; color: var(--danger); }
+.dup-hint { font-size: 0.65rem; color: var(--text-faint); }
+
+/* ─── 空状态 ─── */
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-faint);
+}
+.empty-state .icon { font-size: 2rem; margin-bottom: 1rem; opacity: 0.4; }
+.empty-state p { font-size: 0.85rem; letter-spacing: 0.05em; }
+
+/* ─── 加载 ─── */
+.loading {
+  text-align: center;
+  padding: 4rem;
+  color: var(--text-faint);
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+}
+
+/* ─── 底部批量操作栏 ─── */
+#batch-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.9rem 2rem;
+  background: rgba(17, 17, 17, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border);
+}
+#batch-bar.visible { display: flex; }
+#batch-bar .batch-info { font-size: 0.72rem; color: var(--text-dim); }
+#batch-bar .btn-batch {
+  font-size: 0.72rem;
+  padding: 0.4rem 1.2rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--danger);
+  background: var(--danger);
+  color: #fff;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  transition: opacity 0.3s;
+}
+#batch-bar .btn-batch:hover { opacity: 0.85; }
+#batch-bar .btn-batch:disabled { opacity: 0.3; cursor: default; }
+
+/* ─── 自定义确认弹窗 ─── */
+#confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+}
+#confirm-overlay.show { opacity: 1; visibility: visible; }
+#confirm-panel {
+  background: rgba(30, 30, 30, 0.65);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.8rem 2rem;
+  max-width: 360px;
+  width: 90%;
+  text-align: center;
+  transform: scale(0.95);
+  transition: transform 0.25s var(--ease);
+}
+#confirm-overlay.show #confirm-panel { transform: scale(1); }
+#confirm-panel .confirm-msg {
+  font-size: 0.82rem;
+  color: var(--text);
+  margin-bottom: 1.4rem;
+  line-height: 1.6;
+}
+#confirm-panel .confirm-actions {
+  display: flex;
+  gap: 0.8rem;
+  justify-content: center;
+}
+#confirm-panel .confirm-actions button {
+  font-size: 0.72rem;
+  padding: 0.4rem 1.2rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-family: var(--sans);
+  letter-spacing: 0.03em;
+  transition: opacity 0.3s, background 0.3s;
+}
+#confirm-cancel {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+}
+#confirm-cancel:hover { border-color: var(--border-active); color: var(--text); }
+#confirm-ok {
+  border: 1px solid var(--danger);
+  background: var(--danger);
+  color: #fff;
+}
+#confirm-ok:hover { opacity: 0.85; }
+
+/* ─── 底部提示 ─── */
+#toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  z-index: 300;
+  padding: 0.6rem 1.4rem;
+  border-radius: var(--radius);
+  background: rgba(30, 30, 30, 0.75);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid var(--border);
+  font-size: 0.75rem;
+  color: var(--text);
+  letter-spacing: 0.03em;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s, transform 0.3s var(--ease), visibility 0.3s;
+  pointer-events: none;
+}
+#toast.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}

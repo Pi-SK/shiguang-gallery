@@ -1,0 +1,22 @@
+/* ═══════════════════════════════════════════
+   tokens.css — 管理侧页面（admin / dedup）共享设计令牌
+   gallery 展示页的令牌独立维护于 gallery.css，不在此列。
+   ═══════════════════════════════════════════ */
+
+:root {
+  --bg: #111;
+  --surface: #1a1a1a;
+  --surface-hover: #222;
+  --border: #2a2a2a;
+  --border-active: #444;
+  --text: rgba(255,255,255,0.85);
+  --text-dim: rgba(255,255,255,0.5);
+  --text-faint: rgba(255,255,255,0.3);
+  --accent: #a08c6a;
+  --accent-dim: rgba(160,140,106,0.15);
+  --danger: #c0564f;
+  --success: #5fa07a;
+  --radius: 6px;
+  --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --sans: 'Noto Sans SC', -apple-system, 'PingFang SC', sans-serif;
+}

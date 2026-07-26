@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>拾光 · 去重</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/dedup.css">
+</head>
+<body>
+
+<header>
+  <h1>拾光 · 照片去重</h1>
+  <div class="links">
+    <a href="/admin">← 返回管理</a>
+    <a href="/gallery">查看画廊 →</a>
+  </div>
+</header>
+
+<div id="content">
+  <p class="loading">正在检测重复照片…</p>
+</div>
+
+<div id="toast"></div>
+
+<div id="confirm-overlay">
+  <div id="confirm-panel">
+    <p class="confirm-msg"></p>
+    <div class="confirm-actions">
+      <button id="confirm-cancel">取消</button>
+      <button id="confirm-ok">确认删除</button>
+    </div>
+  </div>
+</div>
+
+<div id="batch-bar">
+  <span class="batch-info"></span>
+  <button class="btn-batch" disabled onclick="batchDelete()">一键清理</button>
+</div>
+
+<script type="module" src="/js/dedup.js"></script>
+</body>
+</html>

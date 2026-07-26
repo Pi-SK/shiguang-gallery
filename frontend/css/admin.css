@@ -1,0 +1,779 @@
+/* ═══════════════════════════════════════════
+   admin.css — 作品管理页样式（设计令牌见 tokens.css）
+   ═══════════════════════════════════════════ */
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { font-size: 14px; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 2rem;
+  line-height: 1.6;
+}
+
+/* 全局滚动条 */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.22); }
+html { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.12) transparent; }
+
+/* ─── 头部 ─── */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+header h1 { font-size: 1.2rem; font-weight: 400; letter-spacing: 0.1em; }
+header .links a { color: var(--text-dim); text-decoration: none; font-size: 0.75rem; margin-left: 1rem; }
+header .links a:hover { color: var(--text); }
+
+/* ─── 圆形上传按钮 ─── */
+.fab {
+  position: fixed;
+  top: 6.5rem;
+  right: 2rem;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  color: #111;
+  font-size: 1.4rem;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s, transform 0.15s;
+  z-index: 50;
+}
+.fab:hover { opacity: 0.85; transform: scale(1.08); }
+.fab:active { transform: scale(0.95); }
+
+/* ─── 去重按钮（次要） ─── */
+.fab-secondary {
+  position: fixed;
+  top: 6.5rem;
+  right: 5.9rem;
+  height: 44px;
+  padding: 0 1rem;
+  border-radius: 22px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  font-family: var(--sans);
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: border-color 0.3s, color 0.3s;
+  z-index: 50;
+  text-decoration: none;
+}
+.fab-secondary:hover { border-color: var(--border-active); color: var(--text); }
+.fab-secondary svg { width: 15px; height: 15px; transition: transform 0.3s var(--ease); }
+.fab-secondary:hover svg { transform: scale(1.12); color: var(--accent); }
+
+/* ─── 上传弹窗 ─── */
+#upload-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s, visibility 0.25s;
+}
+#upload-overlay.show { opacity: 1; visibility: visible; }
+
+#upload-panel {
+  background: rgba(30, 30, 30, 0.65);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 2rem 2.2rem;
+  width: 92%;
+  max-width: 860px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: scale(0.95);
+  transition: transform 0.25s var(--ease);
+}
+#upload-overlay.show #upload-panel { transform: scale(1); }
+
+/* 自定义滚动条 */
+.preview-grid::-webkit-scrollbar { width: 5px; }
+.preview-grid::-webkit-scrollbar-track { background: transparent; }
+.preview-grid::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 3px; }
+.preview-grid::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
+#drop-zone {
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 2rem 2rem;
+  text-align: center;
+  color: var(--text-dim);
+  transition: border-color 0.3s, background 0.3s;
+  cursor: pointer;
+}
+#drop-zone.dragover { border-color: var(--accent); background: var(--accent-dim); }
+#drop-zone .sub { font-size: 0.75rem; color: var(--text-faint); margin-top: 0.5rem; }
+
+/* ─── 上传状态 ─── */
+.preview-grid:empty { display: none; }
+.preview-grid:not(:empty) { margin-top: 1rem; }
+
+/* 上传预览卡片（双列独立堆叠，轻瀑布流）
+   与管理列表同方案：展开 EXIF 只推动本列下方卡片，另一列不留白 */
+.preview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 1rem;
+  align-items: start;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding-bottom: 1rem;
+  scrollbar-width: thin;
+}
+.preview-grid .list-col { gap: 1rem; }
+
+.preview-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.preview-card .thumb-wrap {
+  width: 100%;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.03);
+}
+.preview-card .thumb-wrap img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.preview-card .card-body { padding: 0.75rem 1rem; }
+
+.preview-card .exif-line {
+  font-size: 0.65rem;
+  color: var(--text-faint);
+  margin-bottom: 0.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.preview-card input,
+.preview-card select {
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  padding: 0.35rem 0.5rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  width: 100%;
+  margin-bottom: 0.4rem;
+}
+.preview-card input:focus, .preview-card select:focus { outline: none; border-color: var(--accent); }
+
+.preview-card .card-footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.4rem;
+}
+
+.preview-card .featured-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.2s;
+}
+.preview-card .featured-toggle:hover { color: var(--text-dim); }
+.preview-card .featured-toggle svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  transition: fill 0.2s var(--ease), transform 0.2s var(--ease), color 0.2s;
+}
+.preview-card .featured-toggle:hover svg { transform: scale(1.12); color: var(--accent); }
+.preview-card .featured-toggle.on { color: var(--accent); }
+.preview-card .featured-toggle.on svg { fill: currentColor; filter: drop-shadow(0 0 5px rgba(160, 140, 106, 0.4)); }
+
+/* EXIF 折叠编辑区 */
+.exif-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.2s;
+}
+.exif-toggle:hover { color: var(--text-dim); }
+.exif-toggle .exif-toggle-arrow {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.25s var(--ease);
+}
+.exif-toggle.open .exif-toggle-arrow { transform: rotate(90deg); }
+
+.exif-edit {
+  /* 0fr→1fr 网格行过渡：让面板高度真实连续地展开/收起（替代 max-height 骗术） */
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 0.4s var(--ease), opacity 0.35s var(--ease), margin 0.4s var(--ease);
+  margin-top: 0;
+}
+.exif-edit.open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  margin-top: 0.5rem;
+}
+.exif-edit .exif-grid {
+  /* 作为 0fr 行的唯一子项：必须允许收缩到 0 并裁剪内容 */
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+}
+.exif-edit .exif-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.exif-edit .exif-field label {
+  font-size: 0.6rem;
+  color: var(--text-faint);
+}
+.exif-edit .exif-field input {
+  font-size: 0.7rem;
+  padding: 0.25rem 0.4rem;
+  margin-bottom: 0;
+}
+
+/* 确认按钮区（固定在弹窗底部居中） */
+.confirm-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin: 0 -2.2rem -2rem;
+  padding: 0.9rem 2.2rem;
+  background: rgba(22, 22, 22, 0.65);
+  backdrop-filter: blur(20px) saturate(1.3);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0 0 12px 12px;
+  flex-shrink: 0;
+}
+.confirm-bar .bar-info { font-size: 0.72rem; color: var(--text-dim); }
+
+/* 预览卡片删除按钮 */
+.preview-card { position: relative; }
+.preview-card .preview-remove {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.6);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.2s, transform 0.2s, background 0.2s;
+  z-index: 2;
+}
+.preview-card:hover .preview-remove { opacity: 1; transform: scale(1); }
+.preview-card .preview-remove:hover { background: var(--danger); color: #fff; }
+
+/* ─── 管理视图 ─── */
+.series-tabs {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.series-tabs button {
+  background: none;
+  border: none;
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 0.3rem 0;
+  border-bottom: 1.5px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+}
+.series-tabs button.active { color: var(--text); border-bottom-color: var(--accent); }
+.series-tabs .series-add {
+  font-size: 1rem;
+  color: var(--text-faint);
+  border-bottom: none !important;
+  padding: 0.3rem 0.5rem;
+}
+.series-tabs .series-add:hover { color: var(--accent); }
+.series-tabs .tab-del {
+  display: none;
+  margin-left: 0.3rem;
+  font-size: 0.7rem;
+  color: var(--text-faint);
+  transition: color 0.2s;
+}
+.series-tabs button:hover .tab-del { display: inline; }
+.series-tabs .tab-del:hover { color: var(--danger); }
+.series-tabs .tab-rename {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 0.8rem;
+  padding: 0.2rem 0.5rem;
+  width: 5em;
+  font-family: var(--sans);
+}
+.series-tabs .tab-rename:focus { outline: none; border-color: var(--accent); }
+
+.section-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  margin: 1.5rem 0 0.75rem;
+}
+
+.photo-row {
+  display: grid;
+  grid-template-columns: 90px 1fr auto auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 0.75rem;
+  row-gap: 0;
+  padding: 0.6rem 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: border-color 0.2s, opacity 0.2s;
+  overflow: hidden;
+}
+.photo-row.featured {
+  grid-template-columns: 20px 90px 1fr auto auto;
+}
+.photo-row:hover { border-color: var(--border-active); }
+.photo-row.dragging { opacity: 0.4; }
+.photo-row.drag-over { border-color: var(--accent); }
+.photo-row[draggable="true"] { cursor: grab; }
+
+.photo-row .order-num { display: none; }
+.photo-row.featured .order-num {
+  display: block;
+  grid-column: 1;
+  grid-row: 1;
+  align-self: center;
+  font-size: 0.6rem;
+  color: var(--text-faint);
+  text-align: center;
+  user-select: none;
+}
+.photo-row .thumb {
+  grid-column: 1;
+  grid-row: 1;
+  width: 90px;
+  height: 60px;
+  object-fit: contain;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  align-self: center;
+}
+.photo-row.featured .thumb { grid-column: 2; }
+.photo-row .inputs-wrap {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  align-self: center;
+}
+.photo-row.featured .inputs-wrap { grid-column: 3; }
+.photo-row .exif-summary {
+  grid-column: 3;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.6rem;
+  color: var(--text-faint);
+  cursor: pointer;
+  user-select: none;
+  padding: 0.2rem 1rem;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  line-height: 1.6;
+  align-self: center;
+  min-width: 10em;
+}
+.photo-row .exif-arrow {
+  display: flex;
+  align-items: center;
+  color: var(--text-dim);
+  transition: transform 0.25s var(--ease), color 0.2s;
+  flex-shrink: 0;
+}
+.photo-row .exif-arrow svg { width: 13px; height: 13px; }
+.photo-row .exif-summary:hover .exif-arrow { color: var(--accent); }
+.photo-row .exif-summary.open .exif-arrow {
+  transform: rotate(90deg);
+}
+.photo-row.featured .exif-summary { grid-column: 4; }
+.photo-row .actions-wrap {
+  grid-column: 4;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  align-self: center;
+}
+.photo-row.featured .actions-wrap { grid-column: 5; }
+.photo-row input {
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  padding: 0.3rem 0.5rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  width: 100%;
+}
+.photo-row input:focus { outline: none; border-color: var(--accent); }
+
+/* 操作图标按钮（精选 / 移动 / 删除 统一样式） */
+.photo-row .star,
+.photo-row .move-series,
+.photo-row .del {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.2s var(--ease), color 0.2s var(--ease), transform 0.15s var(--ease);
+}
+.photo-row .star:hover,
+.photo-row .move-series:hover,
+.photo-row .del:hover { background: rgba(255, 255, 255, 0.06); }
+.photo-row .star:active,
+.photo-row .move-series:active,
+.photo-row .del:active { transform: scale(0.88); }
+
+/* 精选星标 */
+.photo-row .star svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  transition: fill 0.2s var(--ease), transform 0.2s var(--ease);
+}
+.photo-row .star:hover { color: var(--accent); }
+.photo-row .star:hover svg { transform: scale(1.12); }
+.photo-row .star.on { color: var(--accent); filter: drop-shadow(0 0 6px rgba(160, 140, 106, 0.45)); }
+.photo-row .star.on svg { fill: currentColor; }
+
+/* 删除 */
+.photo-row .del:hover { color: var(--danger); background: rgba(192, 86, 79, 0.12); }
+.photo-row .del svg { width: 15px; height: 15px; }
+
+/* 行内 EXIF 展开面板（覆盖全局 .exif-edit 样式） */
+.photo-row .exif-edit {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  padding: 0 0.75rem;
+  border-top: 0 solid rgba(255,255,255,0.06);
+  transition: grid-template-rows 0.4s var(--ease), opacity 0.35s var(--ease),
+              padding 0.4s var(--ease), margin 0.4s var(--ease), border-top-width 0.2s;
+}
+.photo-row .exif-edit.open {
+  opacity: 1;
+  padding: 0.7rem 0.75rem 0.8rem;
+  border-top-width: 1px;
+  margin-top: 0.5rem;
+}
+.photo-row .exif-edit .exif-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem 1rem;
+}
+.photo-row .exif-edit .exif-field label {
+  font-size: 0.6rem;
+  color: var(--text-faint);
+  letter-spacing: 0.05em;
+}
+.photo-row .exif-edit .exif-field input {
+  font-size: 0.7rem;
+  padding: 0.3rem 0.5rem;
+  margin-bottom: 0;
+}
+
+/* ─── 通用按钮 ─── */
+button.btn {
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  padding: 0.5rem 1.2rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+button.btn:hover { border-color: var(--border-active); background: var(--surface-hover); }
+button.btn.primary { background: var(--accent); border-color: var(--accent); color: #111; font-weight: 500; }
+button.btn.primary:hover { opacity: 0.9; }
+button.btn.danger { border-color: var(--danger); color: var(--danger); }
+button.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ─── Toast ─── */
+#toast {
+  position: fixed;
+  bottom: 2rem; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.6rem 1.5rem;
+  font-size: 0.8rem;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+  z-index: 100;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ─── 自定义确认弹窗 ─── */
+#modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+}
+#modal-overlay.show { opacity: 1; visibility: visible; }
+
+#modal-box {
+  background: rgba(30, 30, 30, 0.65);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius);
+  padding: 1.8rem 2rem;
+  max-width: 340px;
+  width: 90%;
+  text-align: center;
+  transform: scale(0.95);
+  transition: transform 0.2s var(--ease);
+}
+#modal-overlay.show #modal-box { transform: scale(1); }
+
+#modal-box .modal-msg {
+  font-size: 0.85rem;
+  color: var(--text);
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+#modal-box .modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+#modal-box .modal-actions button {
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  padding: 0.45rem 1.4rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-dim);
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+#modal-box .modal-actions button:hover { border-color: var(--border-active); color: var(--text); }
+
+#modal-box .modal-actions .modal-confirm {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+#modal-box .modal-actions .modal-confirm:hover { opacity: 0.85; }
+
+#modal-box .modal-input {
+  width: 100%;
+  margin-bottom: 1.2rem;
+  padding: 0.5rem 0.75rem;
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius);
+  outline: none;
+  transition: border-color 0.2s;
+}
+#modal-box .modal-input:focus { border-color: rgba(255, 255, 255, 0.35); }
+
+/* ─── 空状态 ─── */
+.empty { text-align: center; padding: 3rem; color: var(--text-faint); font-size: 0.85rem; }
+
+/* ─── 管理列表（双列独立堆叠，行优先分配） ───
+   卡片按「左、右」交替分配进两个独立列容器：
+   展开 EXIF 只推动本列下方卡片，另一列保持紧凑不留白；
+   列内高度过渡逐帧自然跟随，卡片也不会跨列跳动 */
+#featured-list, #all-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 0.5rem;
+  align-items: start;
+}
+.list-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+/* 精选空状态（跨列居中） */
+.featured-empty {
+  text-align: center;
+  padding: 1.2rem;
+  color: var(--text-faint);
+  font-size: 0.8rem;
+}
+
+/* ─── 移动主题 ─── */
+.photo-row .move-series:hover { color: var(--accent); }
+.photo-row .move-series svg { width: 15px; height: 15px; }
+
+.move-dropdown {
+  position: fixed;
+  background: rgba(30, 30, 30, 0.92);
+  backdrop-filter: blur(16px) saturate(1.3);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius);
+  padding: 0.3rem 0;
+  min-width: 120px;
+  z-index: 300;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+}
+.move-dropdown button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.4rem 0.9rem;
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.move-dropdown button:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+.move-dropdown button.current { color: var(--accent); cursor: default; }
+
+/* ─── 响应式 ─── */
+@media (max-width: 700px) {
+  body { padding: 1rem; }
+  .preview-grid, #featured-list, #all-list { grid-template-columns: 1fr; }
+}
+
+/* ─── 卡片内部响应式（容器查询，以卡片实际宽度为准） ───
+   列数与窗口宽度非单调：窗口 700px 以下单列时卡片反而更宽，
+   固定窗口断点会误判，因此以 .list-col（即卡片）宽度为阈值 */
+.list-col { container-type: inline-size; }
+
+/* 卡片偏窄：隐藏 EXIF 摘要文字，箭头收成图标按钮，点击仍可展开 */
+@container (max-width: 560px) {
+  .photo-row .exif-text { display: none; }
+  .photo-row .exif-summary {
+    min-width: 0;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    justify-content: center;
+    border-left: none;
+    border-right: none;
+    border-radius: 8px;
+    transition: background 0.2s var(--ease);
+  }
+  .photo-row .exif-summary:hover { background: rgba(255, 255, 255, 0.06); }
+}
+
+/* 卡片更窄：缩小缩略图，为标题/地点输入框腾出空间 */
+@container (max-width: 400px) {
+  .photo-row { grid-template-columns: 72px 1fr auto auto; column-gap: 0.5rem; }
+  .photo-row.featured { grid-template-columns: 18px 72px 1fr auto auto; }
+  .photo-row .thumb { width: 72px; height: 48px; }
+}
+
+/* 尊重系统「减弱动态效果」偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .exif-edit, .photo-row .exif-edit { transition: none; }
+}

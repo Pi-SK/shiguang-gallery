@@ -160,20 +160,22 @@ header .links a:hover { color: var(--text); }
 .preview-grid:empty { display: none; }
 .preview-grid:not(:empty) { margin-top: 1rem; }
 
-/* 上传预览卡片（瀑布流） */
+/* 上传预览卡片（双列独立堆叠，轻瀑布流）
+   与管理列表同方案：展开 EXIF 只推动本列下方卡片，另一列不留白 */
 .preview-grid {
-  columns: 2;
-  column-gap: 1rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 1rem;
+  align-items: start;
   flex: 1;
   overflow-y: auto;
   min-height: 0;
   padding-bottom: 1rem;
   scrollbar-width: thin;
 }
+.preview-grid .list-col { gap: 1rem; }
 
 .preview-card {
-  break-inside: avoid;
-  margin-bottom: 1rem;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -272,18 +274,22 @@ header .links a:hover { color: var(--text); }
 .exif-toggle.open .exif-toggle-arrow { transform: rotate(90deg); }
 
 .exif-edit {
-  max-height: 0;
-  overflow: hidden;
+  /* 0fr→1fr 网格行过渡：让面板高度真实连续地展开/收起（替代 max-height 骗术） */
+  display: grid;
+  grid-template-rows: 0fr;
   opacity: 0;
-  transition: max-height 0.35s ease, opacity 0.3s ease, margin 0.3s;
+  transition: grid-template-rows 0.4s var(--ease), opacity 0.35s var(--ease), margin 0.4s var(--ease);
   margin-top: 0;
 }
 .exif-edit.open {
-  max-height: 300px;
+  grid-template-rows: 1fr;
   opacity: 1;
   margin-top: 0.5rem;
 }
 .exif-edit .exif-grid {
+  /* 作为 0fr 行的唯一子项：必须允许收缩到 0 并裁剪内容 */
+  min-height: 0;
+  overflow: hidden;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.35rem;
@@ -553,16 +559,12 @@ header .links a:hover { color: var(--text); }
 .photo-row .exif-edit {
   grid-column: 1 / -1;
   grid-row: 2;
-  max-height: 0;
-  overflow: hidden;
-  opacity: 0;
   padding: 0 0.75rem;
   border-top: 0 solid rgba(255,255,255,0.06);
-  transition: max-height 0.35s var(--ease), opacity 0.3s var(--ease),
-              padding 0.3s var(--ease), border-top-width 0.2s;
+  transition: grid-template-rows 0.4s var(--ease), opacity 0.35s var(--ease),
+              padding 0.4s var(--ease), margin 0.4s var(--ease), border-top-width 0.2s;
 }
 .photo-row .exif-edit.open {
-  max-height: 300px;
   opacity: 1;
   padding: 0.7rem 0.75rem 0.8rem;
   border-top-width: 1px;
@@ -700,15 +702,21 @@ button.btn:disabled { opacity: 0.4; cursor: not-allowed; }
 /* ─── 空状态 ─── */
 .empty { text-align: center; padding: 3rem; color: var(--text-faint); font-size: 0.85rem; }
 
-/* ─── 瀑布流（管理列表） ─── */
+/* ─── 管理列表（双列独立堆叠，行优先分配） ───
+   卡片按「左、右」交替分配进两个独立列容器：
+   展开 EXIF 只推动本列下方卡片，另一列保持紧凑不留白；
+   列内高度过渡逐帧自然跟随，卡片也不会跨列跳动 */
 #featured-list, #all-list {
-  columns: 2;
-  column-gap: 0.5rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 0.5rem;
+  align-items: start;
 }
-#featured-list .photo-row,
-#all-list .photo-row {
-  break-inside: avoid;
-  margin-bottom: 0.5rem;
+.list-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
 }
 
 /* 精选空状态（跨列居中） */
@@ -754,13 +762,41 @@ button.btn:disabled { opacity: 0.4; cursor: not-allowed; }
 /* ─── 响应式 ─── */
 @media (max-width: 700px) {
   body { padding: 1rem; }
-  .photo-row { grid-template-columns: 72px 1fr auto; }
-  .photo-row.featured { grid-template-columns: 18px 72px 1fr auto; }
+  .preview-grid, #featured-list, #all-list { grid-template-columns: 1fr; }
+}
+
+/* ─── 卡片内部响应式（容器查询，以卡片实际宽度为准） ───
+   列数与窗口宽度非单调：窗口 700px 以下单列时卡片反而更宽，
+   固定窗口断点会误判，因此以 .list-col（即卡片）宽度为阈值 */
+.list-col { container-type: inline-size; }
+
+/* 卡片偏窄：隐藏 EXIF 摘要文字，箭头收成图标按钮，点击仍可展开 */
+@container (max-width: 560px) {
+  .photo-row .exif-text { display: none; }
+  .photo-row .exif-summary {
+    min-width: 0;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    justify-content: center;
+    border-left: none;
+    border-right: none;
+    border-radius: 8px;
+    transition: background 0.2s var(--ease);
+  }
+  .photo-row .exif-summary:hover { background: rgba(255, 255, 255, 0.06); }
+}
+
+/* 卡片更窄：缩小缩略图，为标题/地点输入框腾出空间 */
+@container (max-width: 400px) {
+  .photo-row { grid-template-columns: 72px 1fr auto auto; column-gap: 0.5rem; }
+  .photo-row.featured { grid-template-columns: 18px 72px 1fr auto auto; }
   .photo-row .thumb { width: 72px; height: 48px; }
-  .photo-row .exif-summary { display: none; }
-  .photo-row .actions-wrap { grid-column: 3; }
-  .photo-row.featured .actions-wrap { grid-column: 4; }
-  .preview-grid { columns: 1; }
+}
+
+/* 尊重系统「减弱动态效果」偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .exif-edit, .photo-row .exif-edit { transition: none; }
 }
 </style>
 </head>
@@ -905,11 +941,10 @@ async function doUpload(files) {
 }
 
 function renderPreviews() {
-  previewGrid.innerHTML = '';
   confirmBar.style.display = pendingUploads.length ? 'flex' : 'none';
   document.getElementById('bar-info').textContent = pendingUploads.length ? `待上传 ${pendingUploads.length} 张` : '';
 
-  pendingUploads.forEach((photo, i) => {
+  const cards = pendingUploads.map((photo, i) => {
     const exif = photo.exif || {};
     const exifParts = [exif.camera, exif.lens, exif.focal_length, exif.aperture, exif.shutter_speed, exif.iso, exif.date_taken].filter(Boolean);
 
@@ -947,8 +982,11 @@ function renderPreviews() {
         </div>
       </div>
     `;
-    previewGrid.appendChild(card);
+    return card;
   });
+
+  // 双列独立堆叠分配（与管理列表同方案）
+  fillColumns(previewGrid, cards);
 
   // 单张移除
   previewGrid.querySelectorAll('.preview-remove').forEach(btn => {
@@ -1143,6 +1181,21 @@ async function loadManage() {
   renderManage();
 }
 
+// 将卡片按「左、右」交替分配到独立列容器：
+// 展开 EXIF 只推动本列下方卡片，另一列保持紧凑不留白
+function fillColumns(container, rows) {
+  container.innerHTML = '';
+  if (!rows.length) return; // 保持 :empty 状态（如 .preview-grid:empty 的隐藏逻辑）
+  const colCount = window.matchMedia('(max-width: 700px)').matches ? 1 : 2;
+  const cols = Array.from({ length: colCount }, () => {
+    const col = document.createElement('div');
+    col.className = 'list-col';
+    container.appendChild(col);
+    return col;
+  });
+  rows.forEach((row, i) => cols[i % colCount].appendChild(row));
+}
+
 function renderManage() {
   const featured = allPhotos.filter(p => p.featured);
   const rest = allPhotos;
@@ -1151,83 +1204,29 @@ function renderManage() {
   document.getElementById('featured-empty').style.display = featured.length ? 'none' : 'block';
 
   // 精选列表（可拖拽排序）
-  featuredList.innerHTML = '';
-  featured.forEach((photo, index) => {
-    featuredList.appendChild(createRow(photo, index, true));
-  });
+  fillColumns(featuredList, featured.map((photo, index) => createRow(photo, index, true)));
 
   // 全部列表
-  allList.innerHTML = '';
-  rest.forEach((photo) => {
-    allList.appendChild(createRow(photo, -1, false));
-  });
+  fillColumns(allList, rest.map((photo) => createRow(photo, -1, false)));
 }
 
+// 跨过 700px 断点时按新列数重新分配卡片（管理列表 + 上传预览）
+window.matchMedia('(max-width: 700px)').addEventListener('change', () => {
+  renderManage();
+  renderPreviews();
+});
+
 /* ═══════════════════════════════════════════
-   EXIF 展开/收起动画（FLIP + Web Animations API）
-   多列（columns）布局重排、以及展开精选卡片时
-   下方「全部作品」区域被整体下推，均无法用 CSS 过渡。
-   做法：先记录各元素位置（FIRST）→瞬间切到最终态（LAST）
-   →用 element.animate() 从旧位置平滑滑向新位置。
-   用 WAAPI 而非手动 transition，避免过渡触发时机问题与残留内联样式，
-   展开与收起双向均能平滑动画。
+   EXIF 展开/收起动画
+   面板高度由 CSS grid-template-rows 0fr→1fr 过渡驱动，
+   卡片高度真实连续生长；管理列表为行优先 Grid（非 columns），
+   下方卡片与「全部作品」区块随布局逐帧自然跟随，无需 FLIP。
+   快速连点时 CSS 过渡可从当前值平滑反向。
    ═══════════════════════════════════════════ */
 function animateExifToggle(exifPanel, exifSummaryEl) {
-  const scope = document.getElementById('manage-view');
   const willOpen = !exifPanel.classList.contains('open');
-
-  // 尊重系统「减弱动态效果」偏好：直接切换，不做位移动画
-  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (!scope || reduce) {
-    exifPanel.classList.toggle('open', willOpen);
-    exifSummaryEl.classList.toggle('open', willOpen);
-    return;
-  }
-
-  // 与全局 UI 保持一致的缓动函数（取 --ease 的实际值，WAAPI 不能直接用 var()）
-  const ease = getComputedStyle(document.documentElement).getPropertyValue('--ease').trim()
-            || 'cubic-bezier(0.25, 0.1, 0.25, 1)';
-
-  // 参与位移动画的元素：两个列表内的卡片 + 分区标签 + 空状态
-  // （精选区展开会把「全部作品」标签及其列表整体下推，一并纳入动画）
-  const els = Array.from(scope.querySelectorAll(
-    '.section-label, .featured-empty, #manage-empty, #featured-list > .photo-row, #all-list > .photo-row'
-  )).filter(el => el.offsetParent !== null);
-
-  // 结束仍在进行的动画，保证位置测量准确（避免快速连点时 transform 叠加）
-  els.forEach(el => el.getAnimations().forEach(a => a.finish()));
-  exifPanel.getAnimations().forEach(a => a.finish());
-
-  // FIRST：记录动画前各元素位置
-  const firstRects = els.map(el => el.getBoundingClientRect());
-
-  // 瞬间切到最终状态（临时禁用面板过渡），让 columns 布局与下游区块一次性排布到位
-  exifPanel.style.transition = 'none';
   exifPanel.classList.toggle('open', willOpen);
   exifSummaryEl.classList.toggle('open', willOpen);
-  void scope.offsetWidth;
-  // 下一帧恢复面板的 CSS 过渡声明（类已应用，不会再触发动画）
-  requestAnimationFrame(() => { exifPanel.style.transition = ''; });
-
-  // LAST + PLAY：用 WAAPI 让每个移动过的元素从旧位置平滑滑向新位置
-  els.forEach((el, i) => {
-    const b = el.getBoundingClientRect();
-    const dx = firstRects[i].left - b.left;
-    const dy = firstRects[i].top - b.top;
-    if (!dx && !dy) return;
-    el.animate(
-      [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0, 0)' }],
-      { duration: 400, easing: ease }
-    );
-  });
-
-  // 面板内容淡入（展开时），柔化面板瞬间展开
-  if (willOpen) {
-    exifPanel.animate(
-      [{ opacity: 0 }, { opacity: 1 }],
-      { duration: 340, easing: 'ease' }
-    );
-  }
 }
 
 function createRow(photo, featuredIdx, isFeaturedSection) {
@@ -1530,13 +1529,6 @@ function showPrompt(msg, placeholder) {
   if (SERIES.length) currentManageSeries = SERIES[0].id;
   renderSeriesTabs();
   loadManage();
-
-  // 窗口缩放时重新布局
-  let resizeTimer;
-  window.addEventListener('resize', () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => layoutAll(true), 100);
-  });
 })();
 </script>
 </body>

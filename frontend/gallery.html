@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>拾光 — 摄影作品</title>
+    <link rel="stylesheet" href="/css/gallery.css" />
+  </head>
+  <body>
+    <!-- 封面 -->
+    <section id="cover" role="banner">
+      <img
+        class="cover-image"
+        id="cover-img"
+        src=""
+        alt=""
+        aria-hidden="true"
+      />
+      <div class="cover-content">
+        <h1 class="photographer-name">拾 光</h1>
+        <p class="cover-subtitle">Photography by Shengkun</p>
+      </div>
+      <p class="enter-hint">点击进入 · 或按任意键</p>
+    </section>
+
+    <!-- 导航 -->
+    <nav id="nav" role="navigation">
+      <span class="nav-brand" data-series="featured" role="button" tabindex="0"
+        >拾光</span
+      >
+      <div class="nav-series">
+        <button data-series="featured" class="active">精选</button>
+        <a
+          href="/admin"
+          class="admin-icon"
+          title="管理后台"
+          aria-label="管理后台"
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="3" />
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68 1.65 1.65 0 0 0 10 3.17V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+            />
+          </svg>
+        </a>
+      </div>
+    </nav>
+
+    <!-- 幻灯片层 -->
+    <main id="slideshow" role="main" aria-live="polite">
+      <div id="photo-stage">
+        <div class="placeholder" aria-hidden="true"></div>
+        <img id="main-photo" src="" alt="" draggable="false" />
+      </div>
+      <button class="arrow-hint" id="arrow-left" aria-label="上一张">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <button class="arrow-hint" id="arrow-right" aria-label="下一张">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </main>
+
+    <!-- 作品信息 -->
+    <div id="photo-info" aria-live="polite">
+      <p class="photo-title"></p>
+      <p class="photo-location"></p>
+      <p class="exif-hint">点击展开拍摄参数</p>
+      <div id="exif-panel"></div>
+    </div>
+    <div id="photo-counter" aria-hidden="true"></div>
+
+    <!-- 向下按钮 -->
+    <button id="scroll-down-btn" aria-label="查看全部照片">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 5v14M5 12l7 7 7-7"/>
+      </svg>
+    </button>
+    <p id="no-featured-hint">暂无精选</p>
+
+    <!-- 系列切换标题 -->
+    <div id="series-title" aria-hidden="true">
+      <h2></h2>
+      <span class="series-count"></span>
+    </div>
+
+    <!-- 卡片层 -->
+    <div id="cards-layer">
+      <div id="cards-header">
+        <span class="cards-series-name"></span>
+        <div class="cards-controls">
+          <select id="sort-select" aria-label="排序方式">
+            <option value="order">默认顺序</option>
+            <option value="date">拍摄日期</option>
+            <option value="filename">文件名</option>
+          </select>
+          <button id="back-to-slideshow" aria-label="返回幻灯片">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 19V5M5 12l7-7 7 7"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div id="cards-container"></div>
+      <div id="cards-footer">
+        <button class="cards-nav" id="cards-prev" aria-label="上一张"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <span id="cards-counter" aria-hidden="true"></span>
+        <button class="cards-nav" id="cards-next" aria-label="下一张"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+      </div>
+    </div>
+
+    <!-- 空状态 -->
+    <div id="empty-msg">
+      <p>尚未添加作品</p>
+      <a href="/admin">前往管理后台上传照片 →</a>
+    </div>
+
+    <div id="series-empty" aria-live="polite">
+      <p class="series-empty-name"></p>
+      <span class="series-empty-bar" aria-hidden="true"></span>
+      <p class="series-empty-hint">暂无作品</p>
+      <a href="/admin">前往管理后台上传 →</a>
+    </div>
+
+    <script type="module" src="/js/gallery.js"></script>
+  </body>
+</html>

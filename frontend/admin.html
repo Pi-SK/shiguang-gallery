@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>拾光 · 管理</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+
+<header>
+  <h1>拾光 · 作品管理</h1>
+  <div class="links"><a href="/">查看画廊 →</a></div>
+</header>
+
+<!-- 圆形上传按钮 -->
+<button id="btn-upload-fab" class="fab" title="上传照片">+</button>
+<a href="/admin/dedup" class="fab-secondary" title="照片去重">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 22H4a2 2 0 0 1-2-2V6"/><path d="m22 13-1.296-1.296a2.41 2.41 0 0 0-3.408 0L11 18"/><circle cx="12" cy="8" r="2"/><rect width="16" height="16" x="6" y="2" rx="2"/></svg>
+  去重
+</a>
+
+<!-- 上传弹窗 -->
+<div id="upload-overlay">
+  <div id="upload-panel">
+    <div id="drop-zone">
+      <p>将照片拖入此处，或点击选择文件</p>
+      <p class="sub">上传后自动解析 EXIF 信息</p>
+    </div>
+    <div class="preview-grid" id="preview-grid"></div>
+    <div class="confirm-bar" id="confirm-bar" style="display:none;">
+      <span class="bar-info" id="bar-info"></span>
+      <button class="btn primary" id="btn-confirm">确认上传</button>
+      <button class="btn danger" id="btn-cancel-upload">取消全部</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 管理视图 ═══ -->
+<div id="manage-view">
+  <div class="series-tabs" id="series-tabs">
+    <!-- 由 JS 动态渲染 -->
+    <button class="series-add" id="btn-add-series" title="新增主题">+</button>
+  </div>
+
+  <div class="section-label">★ 精选（拖拽排序）</div>
+  <div class="featured-empty" id="featured-empty" style="display:none;">暂无精选照片，在下方点击 ★ 标记</div>
+  <div id="featured-list"></div>
+
+  <div class="section-label">全部作品</div>
+  <div id="all-list"></div>
+  <div class="empty" id="manage-empty" style="display:none;">该系列暂无照片</div>
+</div>
+
+<div id="toast"></div>
+
+<!-- 自定义确认弹窗 -->
+<div id="modal-overlay">
+  <div id="modal-box">
+    <p class="modal-msg"></p>
+    <input class="modal-input" type="text" style="display:none;" />
+    <div class="modal-actions">
+      <button class="modal-cancel">取消</button>
+      <button class="modal-confirm">删除</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="/js/admin.js"></script>
+</body>
+</html>
