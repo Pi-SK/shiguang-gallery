@@ -3,9 +3,9 @@ __pycache__/
 *.pyc
 .venv/
 
-# 照片资源与用户数据
-assets/
-data/
+# 照片资源与用户数据（仅根目录；示例库 src-tauri/resources/ 需要入库）
+/assets/
+/data/
 
 # 备份与私有文档
 backup/
@@ -25,6 +25,10 @@ build/
 dist/
 bin/
 obj/
+
+# Rust / Tauri
+src-tauri/target/
+src-tauri/gen/
 
 # 调试临时文件
 dwm_test_result.txt
