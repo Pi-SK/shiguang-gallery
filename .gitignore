@@ -9,7 +9,9 @@ __pycache__/
 
 # 备份与私有文档
 backup/
-doc/
+# doc 下仅界面截图入库（README 引用），其余私有文档排除
+doc/*
+!doc/screenshots/
 
 # 系统文件
 .DS_Store
