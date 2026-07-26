@@ -234,16 +234,24 @@ async def root():
 
 
 @app.get("/gallery")
+@app.get("/gallery.html")
 async def index():
     return FileResponse(str(FRONTEND_DIR / "gallery.html"))
 
 
 @app.get("/admin")
+@app.get("/admin.html")
 async def admin_page():
     return FileResponse(str(FRONTEND_DIR / "admin.html"))
 
 
 @app.get("/admin/dedup")
+async def dedup_redirect():
+    # 旧路径重定向：相对资源引用需在根路径下解析
+    return RedirectResponse(url="/dedup.html")
+
+
+@app.get("/dedup.html")
 async def dedup_page():
     return FileResponse(str(FRONTEND_DIR / "dedup.html"))
 

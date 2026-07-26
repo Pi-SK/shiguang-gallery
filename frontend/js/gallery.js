@@ -3,8 +3,8 @@
    后端调用统一走 api.js 防腐层，图片地址走 assets.js。
    ═══════════════════════════════════════════ */
 
-import { listPhotos, listSeries, getSettings, updateSettings } from './api.js';
-import { photoSrc } from './assets.js';
+import { listPhotos, listSeries, getSettings, updateSettings, libraryStatus, setLibraryDir, initSampleLibrary, isTauri } from './api.js';
+import { photoSrc, initAssets } from './assets.js';
 
 /* ═══════════════════════════════════════════
    状态
@@ -159,7 +159,82 @@ namingInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") submitNaming();
 });
 
-initSignature();
+/* ═══════════════════════════════════════════
+   首启引导（Tauri：库目录未配置时）
+   ═══════════════════════════════════════════ */
+const setupLayer = document.getElementById("setup");
+const setupStepDir = document.getElementById("setup-step-dir");
+const setupStepInit = document.getElementById("setup-step-init");
+const setupChoose = document.getElementById("setup-choose");
+const setupSample = document.getElementById("setup-sample");
+const setupBlank = document.getElementById("setup-blank");
+const setupPath = document.getElementById("setup-path");
+const setupError = document.getElementById("setup-error");
+
+function closeSetup() {
+  setupLayer.classList.add("hidden");
+  setTimeout(() => setupLayer.classList.remove("active"), 1000);
+}
+
+/** 确保库目录可用；未配置时显示引导页并等待用户完成 */
+async function ensureLibrary() {
+  if (!isTauri) return;
+  let st = null;
+  try {
+    st = await libraryStatus();
+  } catch (e) {}
+  if (st && st.configured) return;
+
+  setupLayer.classList.add("active");
+  return new Promise((resolve) => {
+    const finish = () => {
+      closeSetup();
+      resolve();
+    };
+
+    setupChoose.addEventListener("click", async () => {
+      setupError.textContent = "";
+      let dir = null;
+      try {
+        dir = await window.__TAURI__.dialog.open({
+          directory: true,
+          title: "选择照片库目录",
+        });
+      } catch (e) {}
+      if (!dir) return; // 用户取消
+      setupChoose.disabled = true;
+      try {
+        const res = await setLibraryDir(dir);
+        if (res.empty) {
+          // 空目录：进入第二步，询问是否置入示例作品
+          setupPath.textContent = dir;
+          setupStepDir.hidden = true;
+          setupStepInit.hidden = false;
+        } else {
+          finish(); // 已有数据，直接接管
+        }
+      } catch (e) {
+        setupError.textContent = e.message;
+      } finally {
+        setupChoose.disabled = false;
+      }
+    });
+
+    setupSample.addEventListener("click", async () => {
+      setupError.textContent = "";
+      setupSample.disabled = true;
+      try {
+        await initSampleLibrary();
+        finish();
+      } catch (e) {
+        setupError.textContent = e.message;
+        setupSample.disabled = false;
+      }
+    });
+
+    setupBlank.addEventListener("click", finish);
+  });
+}
 
 /* ═══════════════════════════════════════════
    初始化
@@ -190,7 +265,13 @@ async function init() {
   coverImg.src = photoSrc(coverPhoto);
 }
 
-init();
+/* 启动：库目录引导 → 资源层缓存 → 署名 → 画廊 */
+(async function bootstrap() {
+  await ensureLibrary();
+  await initAssets();
+  initSignature();
+  init();
+})();
 
 /* ═══════════════════════════════════════════
    进入 / 退出画廊
@@ -830,6 +911,6 @@ document.querySelector(".admin-icon").addEventListener("click", (e) => {
   e.preventDefault();
   document.body.classList.add("page-leaving");
   setTimeout(() => {
-    window.location.href = "/admin";
+    window.location.href = "admin.html";
   }, 400);
 });

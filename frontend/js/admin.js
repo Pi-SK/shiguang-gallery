@@ -6,8 +6,9 @@
 import {
   listPhotos, uploadPhotos, updatePhoto, deletePhoto, reorderPhotos,
   listSeries, createSeries, renameSeries, deleteSeries,
+  setLibraryDir, isTauri,
 } from './api.js';
-import { thumbSrc } from './assets.js';
+import { thumbSrc, initAssets } from './assets.js';
 
 /* ═══════════════════════════════════════════
    状态
@@ -47,16 +48,52 @@ uploadOverlay.addEventListener('click', (e) => {
 
 /* ═══════════════════════════════════════════
    拖拽 / 点击上传
+   Tauri：HTML5 drop 拿不到本地路径，改用窗口级
+   onDragDropEvent + dialog 多选，路径直传 Rust。
    ═══════════════════════════════════════════ */
-dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-dropZone.addEventListener('drop', (e) => {
-  e.preventDefault();
-  dropZone.classList.remove('dragover');
-  const files = Array.from(e.dataTransfer.files).filter(f => /\.(jpe?g|png|webp|gif|tiff?)$/i.test(f.name));
-  if (files.length) doUpload(files);
-});
-dropZone.addEventListener('click', () => {
+const IMG_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'tiff'];
+const IMG_RE = new RegExp(`\\.(${IMG_EXTS.join('|')})$`, 'i');
+
+if (isTauri) {
+  const webview = window.__TAURI__.webview.getCurrentWebview();
+  webview.onDragDropEvent((event) => {
+    // 仅上传弹窗打开时响应拖放
+    if (!uploadOverlay.classList.contains('show')) return;
+    const t = event.payload.type;
+    if (t === 'enter' || t === 'over') {
+      dropZone.classList.add('dragover');
+    } else if (t === 'leave') {
+      dropZone.classList.remove('dragover');
+    } else if (t === 'drop') {
+      dropZone.classList.remove('dragover');
+      const paths = (event.payload.paths || []).filter(p => IMG_RE.test(p));
+      if (paths.length) doUpload(paths);
+    }
+  });
+} else {
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const files = Array.from(e.dataTransfer.files).filter(f => IMG_RE.test(f.name));
+    if (files.length) doUpload(files);
+  });
+}
+
+dropZone.addEventListener('click', async () => {
+  if (isTauri) {
+    let paths = null;
+    try {
+      paths = await window.__TAURI__.dialog.open({
+        multiple: true,
+        title: '选择照片',
+        filters: [{ name: '图片', extensions: IMG_EXTS }],
+      });
+    } catch (e) {}
+    if (paths && paths.length) doUpload(paths);
+    return;
+  }
   const input = document.createElement('input');
   input.type = 'file'; input.multiple = true; input.accept = 'image/*';
   input.onchange = () => { if (input.files.length) doUpload(Array.from(input.files)); };
@@ -67,6 +104,10 @@ dropZone.addEventListener('click', () => {
    上传流程
    ═══════════════════════════════════════════ */
 async function doUpload(files) {
+  const parsingOverlay = document.getElementById('parsing-overlay');
+  const parsingText = parsingOverlay.querySelector('.parsing-text');
+  parsingText.textContent = `正在解析 ${files.length} 张照片…`;
+  parsingOverlay.classList.add('show');
   try {
     const results = await uploadPhotos(files);
     pendingUploads = pendingUploads.concat(results);
@@ -74,6 +115,8 @@ async function doUpload(files) {
     renderPreviews();
   } catch (e) {
     showToast('上传失败: ' + e.message);
+  } finally {
+    parsingOverlay.classList.remove('show');
   }
 }
 
@@ -619,13 +662,38 @@ function showPrompt(msg, placeholder, initial) {
    署名设置：跳转画廊首启落款页（编辑模式）
    ═══════════════════════════════════════════ */
 document.getElementById('btn-signature').addEventListener('click', () => {
-  location.href = '/gallery?naming=1';
+  location.href = 'gallery.html?naming=1';
 });
+
+/* ═══════════════════════════════════════════
+   更换库目录（仅 Tauri 环境显示）
+   ═══════════════════════════════════════════ */
+const btnLibrary = document.getElementById('btn-library');
+if (isTauri) {
+  btnLibrary.hidden = false;
+  btnLibrary.addEventListener('click', async () => {
+    let dir = null;
+    try {
+      dir = await window.__TAURI__.dialog.open({
+        directory: true,
+        title: '选择照片库目录',
+      });
+    } catch (e) {}
+    if (!dir) return; // 用户取消
+    try {
+      await setLibraryDir(dir);
+      location.reload(); // 切库后整页重载，重新拉取数据
+    } catch (e) {
+      alert(e.message);
+    }
+  });
+}
 
 /* ═══════════════════════════════════════════
    初始化
    ═══════════════════════════════════════════ */
 (async function init() {
+  await initAssets();
   try {
     const data = await listSeries();
     SERIES = data.map(s => ({ id: s.id, name: s.name }));

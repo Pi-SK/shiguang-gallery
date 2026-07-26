@@ -4,7 +4,7 @@
    ═══════════════════════════════════════════ */
 
 import { findDuplicates, deletePhoto } from './api.js';
-import { thumbSrc } from './assets.js';
+import { thumbSrc, initAssets } from './assets.js';
 
 const content = document.getElementById('content');
 
@@ -39,6 +39,7 @@ function showToast(msg) {
 }
 
 async function init() {
+  await initAssets();
   let data;
   try {
     data = await findDuplicates();

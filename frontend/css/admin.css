@@ -50,11 +50,12 @@ header .links a:hover { color: var(--text); }
 }
 .signature-btn svg { width: 14px; height: 14px; }
 .signature-btn:hover { color: var(--text); background: rgba(255, 255, 255, 0.08); }
+.signature-btn[hidden] { display: none; } /* 库目录按钮仅 Tauri 环境显示 */
 
 /* ─── 圆形上传按钮 ─── */
 .fab {
   position: fixed;
-  top: 6.5rem;
+  bottom: 2rem;
   right: 2rem;
   width: 44px;
   height: 44px;
@@ -78,7 +79,7 @@ header .links a:hover { color: var(--text); }
 /* ─── 去重按钮（次要） ─── */
 .fab-secondary {
   position: fixed;
-  top: 6.5rem;
+  bottom: 2rem;
   right: 5.9rem;
   height: 44px;
   padding: 0 1rem;
@@ -616,6 +617,53 @@ button.btn:disabled { opacity: 0.4; cursor: not-allowed; }
   z-index: 100;
 }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ─── 解析中加载弹窗 ─── */
+#parsing-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 260; /* 高于上传弹窗(200) */
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s, visibility 0.25s;
+}
+#parsing-overlay.show { opacity: 1; visibility: visible; }
+#parsing-box {
+  background: rgba(30, 30, 30, 0.65);
+  backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2.2rem 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+}
+.parsing-spinner {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-top-color: var(--accent);
+  animation: parsing-spin 0.8s linear infinite;
+}
+@keyframes parsing-spin {
+  to { transform: rotate(360deg); }
+}
+.parsing-text {
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  color: var(--text);
+}
+.parsing-sub {
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+}
 
 /* ─── 自定义确认弹窗 ─── */
 #modal-overlay {

@@ -82,7 +82,8 @@ pub fn set_library_dir(
 }
 
 /// 空库一键初始化示例库：把打包的 sample-library 拷入当前库目录
-#[tauri::command]
+// async：拷贝示例图片涉及批量文件 IO
+#[tauri::command(async)]
 pub fn init_sample_library(app: AppHandle, state: State<AppState>) -> Result<Value, String> {
     let paths = state.paths()?;
     if !paths.is_empty_library() {
@@ -153,7 +154,8 @@ pub fn list_photos(
 }
 
 /// POST /api/photos/upload —— Tauri 版入参为本地文件路径（dialog / 拖放提供）
-#[tauri::command]
+// async：图片解码/缩略图为重 CPU 操作，移出主线程避免窗口未响应
+#[tauri::command(async)]
 pub fn upload_photos(state: State<AppState>, paths_in: Vec<String>) -> Result<Vec<Photo>, String> {
     let lib = state.paths()?;
     lib.ensure_dirs()?;
@@ -319,7 +321,8 @@ pub fn reorder_photos(state: State<AppState>, ids: Vec<String>) -> Result<Vec<Ph
 }
 
 /// POST /api/photos/regenerate-thumbs
-#[tauri::command]
+// async：全量重生成缩略图为重 CPU 操作
+#[tauri::command(async)]
 pub fn regenerate_thumbs(state: State<AppState>) -> Result<Value, String> {
     let paths = state.paths()?;
     let mut photos = storage::load_photos(&paths)?;
@@ -339,7 +342,8 @@ pub fn regenerate_thumbs(state: State<AppState>) -> Result<Value, String> {
 }
 
 /// GET /api/duplicates
-#[tauri::command]
+// async：需读取并哈希全部图片文件，移出主线程
+#[tauri::command(async)]
 pub fn find_duplicates(state: State<AppState>) -> Result<Vec<DuplicateGroup>, String> {
     let paths = state.paths()?;
     let photos = storage::load_photos(&paths)?;

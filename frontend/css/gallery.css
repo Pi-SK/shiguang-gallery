@@ -175,6 +175,87 @@ body {
   animation: namingShake 0.4s;
 }
 
+/* ═══ 首启引导页（库目录设置，沿用扉页画框风） ═══ */
+#setup {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  transition:
+    opacity 1s var(--ease),
+    visibility 1s;
+}
+#setup.active {
+  display: flex;
+  animation: coverReveal 1.8s var(--ease);
+}
+#setup.hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+.setup-step .naming-desc {
+  margin-bottom: 2.4rem;
+}
+.setup-btn {
+  display: inline-block;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: var(--text-primary);
+  font-family: var(--serif);
+  font-size: 0.85rem;
+  letter-spacing: 0.45em;
+  text-indent: 0.45em;
+  padding: 0.7rem 2.6rem;
+  cursor: pointer;
+  transition:
+    border-color 0.4s var(--ease),
+    background 0.4s var(--ease);
+}
+.setup-btn:hover {
+  border-color: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.04);
+}
+.setup-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.setup-skip {
+  display: block;
+  margin: 1.5rem auto 0;
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  font-size: 0.68rem;
+  letter-spacing: 0.25em;
+  text-indent: 0.25em;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+.setup-skip:hover {
+  color: var(--text-secondary);
+}
+.setup-path {
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+  margin: -1.4rem 0 2rem;
+  max-width: 42ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-inline: auto;
+}
+.setup-error {
+  min-height: 1.2em;
+  margin-top: 1.4rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  color: #c96e6e;
+}
+
 /* ═══ 封面 ═══ */
 #cover {
   position: fixed;
@@ -266,6 +347,15 @@ body {
     opacity 0.5s var(--ease),
     transform 0.5s var(--ease);
   pointer-events: none;
+}
+/* 浅色照片上导航文字易看不清，加一层自上而下的浅遮罩 */
+#nav::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 -0.8rem 0; /* 略向下延伸，渐变过渡柔和 */
+  background: linear-gradient(to bottom, rgba(10, 10, 10, 0.45), rgba(10, 10, 10, 0));
+  pointer-events: none;
+  z-index: -1;
 }
 #nav.visible {
   opacity: 1;
@@ -418,6 +508,24 @@ body {
 #photo-info.visible {
   opacity: 1;
   transform: translateY(0);
+}
+/* EXIF 展开时垫一层左下角径向浅遮罩，浅色照片上保证可读 */
+#photo-info::before {
+  content: '';
+  position: absolute;
+  inset: -3rem -4rem -2.5rem -2.5rem; /* 越过文字边界并盖到屏幕左下角 */
+  background: radial-gradient(
+    ellipse at bottom left,
+    rgba(10, 10, 10, 0.6),
+    rgba(10, 10, 10, 0) 72%
+  );
+  opacity: 0;
+  transition: opacity 0.4s var(--ease);
+  pointer-events: none;
+  z-index: -1;
+}
+#photo-info:has(#exif-panel.open)::before {
+  opacity: 1;
 }
 #photo-info .photo-title {
   font-family: var(--serif);

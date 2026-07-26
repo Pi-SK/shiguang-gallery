@@ -30,7 +30,8 @@ pub fn generate_thumbnail(file_path: &Path, thumbs_dir: &Path, photo_id: &str) -
         let resized = if (tw, th) == (img.width(), img.height()) {
             img
         } else {
-            img.resize_exact(tw, th, FilterType::Lanczos3)
+            // Triangle 滤镜：缩略图尺寸下与 Lanczos3 视觉无差，速度快数倍（对齐 Pillow thumbnail 的速度取向）
+            img.resize_exact(tw, th, FilterType::Triangle)
         };
         // 转 RGB（丢弃 alpha / 调色板）
         let rgb = resized.to_rgb8();

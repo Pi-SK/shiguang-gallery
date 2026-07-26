@@ -1,0 +1,76 @@
+/* ═══════════════════════════════════════════
+   titlebar.css — 自定义标题栏（仅 Tauri 注入）
+   自包含配色，不依赖各页令牌变量。
+   ═══════════════════════════════════════════ */
+
+#titlebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 36px;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  background: #0d0d0d;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.titlebar-title {
+  flex: 1;
+  padding-left: 1.1rem;
+  font-size: 0.72rem;
+  font-weight: 300;
+  letter-spacing: 0.3em;
+  color: rgba(255, 255, 255, 0.55);
+  white-space: nowrap;
+  pointer-events: none; /* 拖动事件交给底层 drag-region */
+}
+
+.titlebar-btn {
+  width: 46px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.55);
+  cursor: default;
+  transition: background 0.15s, color 0.15s;
+}
+.titlebar-btn svg {
+  width: 10px;
+  height: 10px;
+  stroke: currentColor;
+  stroke-width: 1;
+  fill: none;
+}
+.titlebar-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: #fff;
+}
+#titlebar-close:hover {
+  background: #c42b1c;
+  color: #fff;
+}
+
+/* ─── 页面内容让位（html.has-titlebar 由 titlebar.js 添加） ─── */
+html.has-titlebar body {
+  margin-top: 36px; /* 不动各页自身 padding */
+  min-height: calc(100vh - 36px); /* 抵消 margin，避免恒现滚动条 */
+}
+/* gallery 为全屏沉浸布局（fixed 层定位），margin 不生效，固定层各自下移 */
+html.has-titlebar body.gallery-page {
+  margin-top: 0;
+}
+html.has-titlebar body.gallery-page #nav {
+  top: 36px;
+}
+/* 幻灯片与卡片层整体下移，照片在标题栏以下区域内居中 */
+html.has-titlebar body.gallery-page #slideshow,
+html.has-titlebar body.gallery-page #cards-layer {
+  top: 36px;
+}

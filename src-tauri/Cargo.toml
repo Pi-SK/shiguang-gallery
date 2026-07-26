@@ -26,3 +26,8 @@ strip = true
 lto = true
 codegen-units = 1
 panic = "abort"
+
+# debug 构建下依赖库也按优化编译：image 解码/缩放 O0 时慢 10~50 倍
+# 仅首次全量编译变慢，自身代码增量编译速度不受影响
+[profile.dev.package."*"]
+opt-level = 3
