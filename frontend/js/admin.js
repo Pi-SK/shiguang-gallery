@@ -569,8 +569,8 @@ function showConfirm(msg) {
   });
 }
 
-/* 自定义输入弹窗（替代原生 prompt） */
-function showPrompt(msg, placeholder) {
+/* 自定义输入弹窗（替代原生 prompt）；initial 为预填初值 */
+function showPrompt(msg, placeholder, initial) {
   return new Promise((resolve) => {
     const overlay = document.getElementById('modal-overlay');
     const box = document.getElementById('modal-box');
@@ -580,7 +580,7 @@ function showPrompt(msg, placeholder) {
 
     box.querySelector('.modal-msg').textContent = msg;
     input.style.display = 'block';
-    input.value = '';
+    input.value = initial || '';
     input.placeholder = placeholder || '';
     confirmBtn.textContent = '确定';
     confirmBtn.style.background = 'rgba(255,255,255,0.12)';
@@ -614,6 +614,13 @@ function showPrompt(msg, placeholder) {
     input.addEventListener('keydown', onKey);
   });
 }
+
+/* ═══════════════════════════════════════════
+   署名设置：跳转画廊首启落款页（编辑模式）
+   ═══════════════════════════════════════════ */
+document.getElementById('btn-signature').addEventListener('click', () => {
+  location.href = '/gallery?naming=1';
+});
 
 /* ═══════════════════════════════════════════
    初始化

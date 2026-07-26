@@ -31,8 +31,25 @@ header {
   border-bottom: 1px solid var(--border);
 }
 header h1 { font-size: 1.2rem; font-weight: 400; letter-spacing: 0.1em; }
-header .links a { color: var(--text-dim); text-decoration: none; font-size: 0.75rem; margin-left: 1rem; }
+header .links { display: flex; align-items: center; gap: 1rem; }
+header .links a { color: var(--text-dim); text-decoration: none; font-size: 0.75rem; margin-left: 0; }
 header .links a:hover { color: var(--text); }
+/* 署名设置入口（钢笔 icon，与链接同级的低调按钮） */
+.signature-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
+.signature-btn svg { width: 14px; height: 14px; }
+.signature-btn:hover { color: var(--text); background: rgba(255, 255, 255, 0.08); }
 
 /* ─── 圆形上传按钮 ─── */
 .fab {

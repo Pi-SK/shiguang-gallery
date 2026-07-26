@@ -7,6 +7,29 @@
     <link rel="stylesheet" href="/css/gallery.css" />
   </head>
   <body>
+    <!-- 首启落款页（未设置署名时显示） -->
+    <section id="naming" aria-label="设置署名">
+      <div class="naming-frame">
+        <span class="naming-ornament" aria-hidden="true">❖</span>
+        <h2 class="naming-title">拾 光</h2>
+        <p class="naming-sub">Photography Collection</p>
+        <p class="naming-desc">每一幅作品，都值得一个署名<br />请留下您的名字，它将镌于扉页</p>
+        <div class="naming-input-row">
+          <span class="naming-prefix">Photography by</span>
+          <input
+            id="naming-input"
+            type="text"
+            maxlength="30"
+            placeholder="您的名字"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </div>
+        <button id="naming-confirm">落 款</button>
+        <button id="naming-skip">暂不署名</button>
+      </div>
+    </section>
+
     <!-- 封面 -->
     <section id="cover" role="banner">
       <img
@@ -18,7 +41,7 @@
       />
       <div class="cover-content">
         <h1 class="photographer-name">拾 光</h1>
-        <p class="cover-subtitle">Photography by Shengkun</p>
+        <p class="cover-subtitle" id="cover-subtitle">Photography</p>
       </div>
       <p class="enter-hint">点击进入 · 或按任意键</p>
     </section>

@@ -3,7 +3,7 @@
    后端调用统一走 api.js 防腐层，图片地址走 assets.js。
    ═══════════════════════════════════════════ */
 
-import { listPhotos, listSeries } from './api.js';
+import { listPhotos, listSeries, getSettings, updateSettings } from './api.js';
 import { photoSrc } from './assets.js';
 
 /* ═══════════════════════════════════════════
@@ -17,6 +17,7 @@ let navTimer = null;
 let entered = false;
 let exifOpen = false;
 let cardsMode = false;
+let namingActive = false; // 首启落款页显示中，屏蔽进入画廊
 
 const SERIES_META = {
   featured: { name: "精选" },
@@ -91,6 +92,76 @@ function renderNavButtons() {
 }
 
 /* ═══════════════════════════════════════════
+   署名（首启落款页 + 封面副标题）
+   ═══════════════════════════════════════════ */
+const namingLayer = document.getElementById("naming");
+const namingFrame = document.querySelector(".naming-frame");
+const namingInput = document.getElementById("naming-input");
+const namingConfirm = document.getElementById("naming-confirm");
+const namingSkip = document.getElementById("naming-skip");
+const coverSubtitle = document.getElementById("cover-subtitle");
+
+function applySignature(name) {
+  coverSubtitle.textContent = name ? `Photography by ${name}` : "Photography";
+}
+
+function closeNaming() {
+  namingActive = false;
+  namingLayer.classList.add("hidden");
+  // 淡出结束后彻底移除，避免遮挡封面点击
+  setTimeout(() => namingLayer.classList.remove("active"), 1000);
+}
+
+async function submitNaming() {
+  const name = namingInput.value.trim();
+  if (!name) {
+    // 空输入：画框轻微摇头提示
+    namingFrame.classList.remove("shake");
+    void namingFrame.offsetWidth;
+    namingFrame.classList.add("shake");
+    namingInput.focus();
+    return;
+  }
+  try {
+    await updateSettings({ photographer_name: name });
+  } catch (e) {}
+  applySignature(name);
+  closeNaming();
+}
+
+async function initSignature() {
+  let name = "";
+  try {
+    const s = await getSettings();
+    name = (s && s.photographer_name) || "";
+  } catch (e) {}
+  applySignature(name);
+
+  // 编辑模式：管理页"署名设置"跳转 /?naming=1 直接进入落款页
+  const editMode = new URLSearchParams(location.search).has("naming");
+  if (editMode) {
+    // 清理地址栏参数，刷新后不再强制进入
+    history.replaceState(null, "", location.pathname);
+  }
+
+  if (!name || editMode) {
+    namingActive = true;
+    namingInput.value = name; // 编辑时预填现有署名
+    namingSkip.textContent = name ? "保留原署名" : "暂不署名";
+    namingLayer.classList.add("active");
+    setTimeout(() => namingInput.focus(), 600);
+  }
+}
+
+namingConfirm.addEventListener("click", submitNaming);
+namingSkip.addEventListener("click", closeNaming);
+namingInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") submitNaming();
+});
+
+initSignature();
+
+/* ═══════════════════════════════════════════
    初始化
    ═══════════════════════════════════════════ */
 async function init() {
@@ -152,6 +223,7 @@ function exitToCover() {
 
 cover.addEventListener("click", enterGallery);
 document.addEventListener("keydown", (e) => {
+  if (namingActive) return; // 落款页显示中，键盘不触发进入
   if (!entered && e.key !== "F5" && e.key !== "F12") enterGallery();
 });
 

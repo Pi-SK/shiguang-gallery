@@ -26,6 +26,7 @@ DATA_DIR = BASE_DIR / "data"
 FRONTEND_DIR = BASE_DIR / "frontend"
 PHOTOS_JSON = DATA_DIR / "photos.json"
 SERIES_JSON = DATA_DIR / "series.json"
+SETTINGS_JSON = DATA_DIR / "settings.json"
 
 ASSETS_DIR.mkdir(exist_ok=True)
 THUMBS_DIR.mkdir(exist_ok=True)
@@ -56,6 +57,23 @@ def load_series() -> list[dict]:
 def save_series(series: list[dict]) -> None:
     with open(SERIES_JSON, "w", encoding="utf-8") as f:
         json.dump(series, f, ensure_ascii=False, indent=2)
+
+
+DEFAULT_SETTINGS = {"photographer_name": ""}
+
+
+def load_settings() -> dict:
+    """读取应用设置；缺失字段回填默认值"""
+    if not SETTINGS_JSON.exists():
+        return dict(DEFAULT_SETTINGS)
+    with open(SETTINGS_JSON, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return {**DEFAULT_SETTINGS, **data}
+
+
+def save_settings(settings: dict) -> None:
+    with open(SETTINGS_JSON, "w", encoding="utf-8") as f:
+        json.dump(settings, f, ensure_ascii=False, indent=2)
 
 
 # ─── EXIF 解析 ──────────────────────────────────────────
@@ -194,6 +212,10 @@ class SeriesCreate(BaseModel):
 
 class SeriesRename(BaseModel):
     name: str
+
+
+class SettingsUpdate(BaseModel):
+    photographer_name: Optional[str] = None
 
 
 # ─── FastAPI 应用 ───────────────────────────────────────
@@ -441,6 +463,27 @@ async def regenerate_thumbs():
                 count += 1
     save_photos(photos)
     return {"regenerated": count}
+
+
+# ─── 设置 API ──────────────────────────────────────────
+
+@app.get("/api/settings")
+async def get_settings():
+    """获取应用设置（摄影师署名等）"""
+    return load_settings()
+
+
+@app.patch("/api/settings")
+async def update_settings(body: SettingsUpdate):
+    """更新应用设置（部分字段）"""
+    settings = load_settings()
+    if body.photographer_name is not None:
+        name = body.photographer_name.strip()
+        if len(name) > 30:
+            raise HTTPException(400, "署名不能超过 30 个字符")
+        settings["photographer_name"] = name
+    save_settings(settings)
+    return settings
 
 
 # ─── 系列管理 API ──────────────────────────────────────

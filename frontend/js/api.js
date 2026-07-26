@@ -108,6 +108,21 @@ export async function deleteSeries(id) {
   return request(`/api/series/${id}`, { method: 'DELETE' });
 }
 
+/* ─── 设置 ─── */
+
+/** 获取应用设置（摄影师署名等） */
+export async function getSettings() {
+  return request('/api/settings');
+}
+
+/**
+ * 更新应用设置（部分字段）。
+ * @param {{photographer_name?: string}} patch
+ */
+export async function updateSettings(patch) {
+  return request('/api/settings', jsonBody('PATCH', patch));
+}
+
 /* ─── 去重 ─── */
 
 /** 检测重复照片，返回按系列分组的重复组 */

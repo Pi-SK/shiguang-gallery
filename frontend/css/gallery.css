@@ -35,6 +35,146 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* ═══ 首启落款页（古典扉页风） ═══ */
+#naming {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  transition:
+    opacity 1s var(--ease),
+    visibility 1s;
+}
+#naming.active {
+  display: flex;
+  animation: coverReveal 1.8s var(--ease);
+}
+#naming.hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+.naming-frame {
+  position: relative;
+  text-align: center;
+  padding: clamp(2.5rem, 6vw, 4.5rem) clamp(2rem, 8vw, 6rem);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  outline: 1px solid rgba(255, 255, 255, 0.05);
+  outline-offset: 7px;
+  max-width: min(90vw, 560px);
+}
+.naming-ornament {
+  display: block;
+  color: var(--text-faint);
+  font-size: 0.75rem;
+  margin-bottom: 2.2rem;
+}
+.naming-title {
+  font-family: var(--serif);
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-weight: 400;
+  letter-spacing: 0.25em;
+  text-indent: 0.25em;
+  margin-bottom: 0.9rem;
+}
+.naming-sub {
+  font-size: 0.65rem;
+  font-weight: 300;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: 2.4rem;
+}
+.naming-desc {
+  font-family: var(--serif);
+  font-size: 0.85rem;
+  line-height: 2;
+  color: var(--text-secondary);
+}
+.naming-input-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.8rem;
+  margin: 2.4rem 0 2.2rem;
+}
+.naming-prefix {
+  font-size: 0.7rem;
+  font-weight: 300;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+#naming-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+  color: var(--text-primary);
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
+  text-align: center;
+  width: 12ch;
+  padding: 0.3rem 0.4rem;
+  transition: border-color 0.4s var(--ease);
+}
+#naming-input:focus {
+  outline: none;
+  border-bottom-color: rgba(255, 255, 255, 0.6);
+}
+#naming-input::placeholder {
+  color: var(--text-faint);
+  font-size: 0.9rem;
+  letter-spacing: 0.15em;
+}
+#naming-confirm {
+  display: inline-block;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: var(--text-primary);
+  font-family: var(--serif);
+  font-size: 0.85rem;
+  letter-spacing: 0.45em;
+  text-indent: 0.45em;
+  padding: 0.7rem 2.6rem;
+  cursor: pointer;
+  transition:
+    border-color 0.4s var(--ease),
+    background 0.4s var(--ease);
+}
+#naming-confirm:hover {
+  border-color: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.04);
+}
+#naming-skip {
+  display: block;
+  margin: 1.5rem auto 0;
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  font-size: 0.68rem;
+  letter-spacing: 0.25em;
+  text-indent: 0.25em;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+#naming-skip:hover {
+  color: var(--text-secondary);
+}
+/* 输入为空时确认按钮的轻微摇头提示 */
+@keyframes namingShake {
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
+}
+.naming-frame.shake {
+  animation: namingShake 0.4s;
+}
+
 /* ═══ 封面 ═══ */
 #cover {
   position: fixed;
