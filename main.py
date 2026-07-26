@@ -1,6 +1,10 @@
 """
 拾光 · 摄影画廊 — FastAPI 后端
 提供照片管理 API（含 EXIF 解析）+ 静态文件服务
+
+[DEPRECATED] 应用已迁移至 Tauri（src-tauri/，Rust 后端），本文件仅作参考保留：
+- 生产入口：src-tauri（cargo tauri build 打包 NSIS 安装包）
+- 本文件仍可用 `uvicorn main:app` 启动，供浏览器模式快速调试前端（frontend/）
 """
 
 import json
