@@ -19,6 +19,11 @@ let exifOpen = false;
 let cardsMode = false;
 let namingActive = false; // 首启落款页显示中，屏蔽进入画廊
 
+/* 自动轮播：开关状态持久化到 localStorage，计时器由 scheduleAutoplay 统一管理 */
+const AUTOPLAY_INTERVAL = 5000;
+let autoPlay = localStorage.getItem("autoplay") === "1";
+let autoTimer = null;
+
 const SERIES_META = {
   featured: { name: "精选" },
 };
@@ -32,6 +37,7 @@ const slideshow = document.getElementById("slideshow");
 const mainPhoto = document.getElementById("main-photo");
 const photoInfo = document.getElementById("photo-info");
 const photoCounter = document.getElementById("photo-counter");
+const autoplayBtn = document.getElementById("autoplay-btn");
 const seriesTitle = document.getElementById("series-title");
 const arrowLeft = document.getElementById("arrow-left");
 const arrowRight = document.getElementById("arrow-right");
@@ -282,6 +288,7 @@ function enterGallery() {
   cover.classList.add("hidden");
   slideshow.classList.add("active");
   showPhoto(0);
+  autoplayBtn.classList.add("visible");
   showNav();
   scheduleNavHide();
 }
@@ -290,11 +297,13 @@ function exitToCover() {
   if (!entered) return;
   if (cardsMode) exitCardsMode();
   entered = false;
+  stopAutoplay();
   clearTimeout(navTimer);
   hideNav();
   slideshow.classList.remove("active");
   photoInfo.classList.remove("visible");
   photoCounter.classList.remove("visible");
+  autoplayBtn.classList.remove("visible");
   scrollDownBtn.classList.remove("visible");
   noFeaturedHint.classList.remove("visible");
   closeExif();
@@ -341,6 +350,7 @@ function showPhoto(index) {
       mainPhoto.classList.add("loaded"); // 触发 opacity + scale 过渡
       updateInfo(photo);
       isTransitioning = false;
+      scheduleAutoplay(); // 每次展示完成后重新计时（含手动翻页）
     });
     preloadAdjacent();
   };
@@ -354,6 +364,7 @@ function showPhoto(index) {
       mainPhoto.classList.add("loaded");
       updateInfo(photo);
       isTransitioning = false;
+      scheduleAutoplay(); // 加载失败也继续轮播，避免卡在坏图上
     });
   };
   img.src = photoSrc(photo);
@@ -417,6 +428,41 @@ function goPrev() {
 }
 
 /* ═══════════════════════════════════════════
+   自动轮播
+   ═══════════════════════════════════════════ */
+/* 重置计时器：showPhoto 完成后统一调用，手动翻页也会自然重新计时 */
+function scheduleAutoplay() {
+  clearTimeout(autoTimer);
+  if (!autoPlay || !entered || cardsMode || currentList.length <= 1) return;
+  autoTimer = setTimeout(goNext, AUTOPLAY_INTERVAL);
+}
+
+function stopAutoplay() {
+  clearTimeout(autoTimer);
+}
+
+/* 图标与提示随开关状态同步 */
+function syncAutoplayBtn() {
+  autoplayBtn.classList.toggle("playing", autoPlay);
+  const label = autoPlay ? "关闭自动轮播" : "开启自动轮播";
+  autoplayBtn.title = label;
+  autoplayBtn.setAttribute("aria-label", label);
+}
+syncAutoplayBtn();
+
+autoplayBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  autoPlay = !autoPlay;
+  localStorage.setItem("autoplay", autoPlay ? "1" : "0");
+  syncAutoplayBtn();
+  if (autoPlay) {
+    scheduleAutoplay();
+  } else {
+    stopAutoplay();
+  }
+});
+
+/* ═══════════════════════════════════════════
    EXIF
    ═══════════════════════════════════════════ */
 photoInfo.addEventListener("click", () => {
@@ -440,6 +486,7 @@ function closeExif() {
    ═══════════════════════════════════════════ */
 async function enterCardsMode(sort) {
   cardsMode = true;
+  stopAutoplay();
   let photos = [];
   try {
     photos = await listPhotos({
@@ -454,6 +501,7 @@ async function enterCardsMode(sort) {
 
   photoInfo.classList.remove("visible");
   photoCounter.classList.remove("visible");
+  autoplayBtn.classList.remove("visible");
   scrollDownBtn.classList.remove("visible");
   noFeaturedHint.classList.remove("visible");
   closeExif();
@@ -473,6 +521,8 @@ function exitCardsMode() {
   if (currentList.length > 0) {
     photoInfo.classList.add("visible");
     photoCounter.classList.add("visible");
+    autoplayBtn.classList.add("visible");
+    scheduleAutoplay(); // 回到幻灯片，恢复轮播计时
   }
   if (currentSeries !== "featured") {
     scrollDownBtn.classList.add("visible");
@@ -690,10 +740,12 @@ async function switchSeries(series) {
   sortSelect.value = "order";
 
   // 立即隐藏当前照片，防止切换时闪现旧系列内容
+  stopAutoplay();
   mainPhoto.classList.remove("loaded");
   mainPhoto.classList.add("blank");
   photoInfo.classList.remove("visible");
   photoCounter.classList.remove("visible");
+  autoplayBtn.classList.remove("visible");
   scrollDownBtn.classList.remove("visible");
   noFeaturedHint.classList.remove("visible");
   closeExif();
@@ -744,6 +796,7 @@ async function switchSeries(series) {
       stagePlaceholder.style.display = "";
       currentList = photos;
       showPhoto(0);
+      autoplayBtn.classList.add("visible");
       scrollDownBtn.classList.toggle("visible", series !== "featured");
     }
     updateArrows();

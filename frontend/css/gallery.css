@@ -583,12 +583,78 @@ body {
   font-size: 0.7rem;
   font-weight: 300;
   letter-spacing: 0.15em;
+  line-height: 1; /* 显式行高，供轮播按钮做中心对齐计算 */
   color: var(--text-faint);
   opacity: 0;
   transition: opacity 0.6s var(--ease) 0.3s;
 }
 #photo-counter.visible {
   opacity: 1;
+}
+
+/* ═══ 自动轮播开关（细描边圆钮，与页码计数器水平中心对齐） ═══ */
+#autoplay-btn {
+  position: fixed;
+  /* 计数器文字中心 = bottom(2.5rem) + 半行高(0.35rem)，减去按钮半高 15px 使两者中心重合 */
+  bottom: calc(2.85rem - 15px);
+  right: 6.5rem;
+  z-index: 40;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 50%;
+  background: rgba(10, 10, 10, 0.35);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  padding: 0;
+  cursor: pointer;
+  color: var(--text-faint);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.6s var(--ease) 0.3s,
+    color 0.3s var(--ease),
+    border-color 0.3s var(--ease),
+    background 0.3s var(--ease),
+    transform 0.2s var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+#autoplay-btn.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+#autoplay-btn:hover {
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.08);
+}
+#autoplay-btn:active {
+  transform: scale(0.9);
+}
+/* 开启态：描边与图标微微提亮，示意轮播运行中 */
+#autoplay-btn.playing {
+  color: var(--text-secondary);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+#autoplay-btn svg {
+  width: 11px;
+  height: 11px;
+}
+/* 播放三角形视觉重心偏左，右移 1px 做光学居中 */
+#autoplay-btn .icon-play {
+  transform: translateX(1px);
+}
+#autoplay-btn .icon-pause {
+  display: none;
+}
+#autoplay-btn.playing .icon-play {
+  display: none;
+}
+#autoplay-btn.playing .icon-pause {
+  display: block;
 }
 
 /* ═══ 上一张 / 下一张 导航按钮（无边框/填充，仅悬停时浮现，保持画面聚焦） ═══ */
@@ -1087,6 +1153,11 @@ body {
   #photo-counter {
     bottom: 2rem;
     right: 1.5rem;
+  }
+  #autoplay-btn {
+    /* 与移动端计数器（bottom:2rem）中心对齐 */
+    bottom: calc(2.35rem - 15px);
+    right: 5.5rem;
   }
   #photo-stage img {
     max-width: 96vw;
