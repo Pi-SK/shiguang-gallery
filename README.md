@@ -4,7 +4,15 @@
 
 **一座装进桌面的私人影像展馆**
 
-*本地运行的个人摄影作品展览器 · 电子水牌播放器*
+*只为照片本身而生 · 稳重克制的展览美学 · Windows 开箱即用*
+
+**ShiGuang Gallery** — a local-first photography exhibition app for Windows.<br>
+Elegant full-screen slideshow, EXIF display & digital signage, built with Tauri + Rust.
+
+[![Release](https://img.shields.io/github/v/release/Pi-SK/shiguang-gallery)](https://github.com/Pi-SK/shiguang-gallery/releases)
+[![License](https://img.shields.io/github/license/Pi-SK/shiguang-gallery)](LICENSE)
+![Platform](https://img.shields.io/badge/platform-Windows-0078d4)
+![Tauri](https://img.shields.io/badge/Tauri-2-ffc131)
 
 </div>
 
@@ -108,6 +116,10 @@ photo_gallery/
 └── src-tauri/           # Rust 后端与打包配置
     └── src/             #   命令、存储、EXIF、缩略图……
 ```
+
+## 许可
+
+本项目基于 [MIT License](LICENSE) 开源。
 
 ---
 
