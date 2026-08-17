@@ -1,0 +1,49 @@
+name: Build Desktop
+
+# 推送 vX.Y.Z 标签时触发：多平台打包并上传到对应 Release
+# 例：git tag v2.0.1 && git push origin v2.0.1
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+            target: x86_64-pc-windows-msvc
+          - platform: macos-latest
+            target: aarch64-apple-darwin
+          - platform: macos-latest
+            target: x86_64-apple-darwin
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      # tauri-action：按当前平台执行 tauri build，
+      # 产物（Windows 为 NSIS 安装包，macOS 为 .app.tar.gz / .dmg）
+      # 自动上传到标签对应的 GitHub Release
+      - name: Tauri build
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: '拾光 · 画廊 ${{ github.ref_name }}'
+          args: --target ${{ matrix.target }}

@@ -420,11 +420,24 @@ header .links a:hover { color: var(--text); }
 }
 .photo-row.featured {
   grid-template-columns: 20px 90px 1fr auto auto;
+  cursor: grab;
 }
 .photo-row:hover { border-color: var(--border-active); }
 .photo-row.dragging { opacity: 0.4; }
+.photo-row.featured.dragging { cursor: grabbing; }
 .photo-row.drag-over { border-color: var(--accent); }
-.photo-row[draggable="true"] { cursor: grab; }
+
+/* 拖拽虚影：克隆卡片跟随光标，pointer-events:none 保证 elementFromPoint 能穿透它命中目标行 */
+.photo-row.drag-ghost {
+  position: fixed;
+  z-index: 1000;
+  margin: 0;
+  pointer-events: none;
+  opacity: 0.85;
+  cursor: grabbing;
+  transform: rotate(1.5deg) scale(1.02);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+}
 
 .photo-row .order-num { display: none; }
 .photo-row.featured .order-num {

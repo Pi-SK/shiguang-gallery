@@ -17,6 +17,10 @@ let pendingUploads = [];  // 上传预览中的照片
 let allPhotos = [];       // 已入库的全部照片
 let currentManageSeries = 'shanchuan';
 
+// Pointer 拖拽排序状态。桌面端 WebView 对 HTML5 DnD 的 dataTransfer 支持不稳定，
+// 因此用 Pointer Events 在前端完成拖拽，松开后再调用统一的排序接口保存。
+let pointerDrag = null;
+
 let SERIES = [];  // 从 API 动态加载
 
 /* DOM */
@@ -375,6 +379,60 @@ function renderManage() {
   fillColumns(allList, rest.map((photo) => createRow(photo, -1, false)));
 }
 
+// Pointer Events 没有浏览器自带的拖拽虚影，手动克隆一份行卡片跟随光标
+function startDragGhost(row, e) {
+  const ghost = row.cloneNode(true);
+  ghost.classList.add('drag-ghost');
+  ghost.classList.remove('drag-over');
+  ghost.querySelector('.exif-edit')?.remove(); // 虚影只保留收起态，避免带出展开的 EXIF 面板
+  const rect = row.getBoundingClientRect();
+  ghost.style.width = rect.width + 'px';
+  pointerDrag.grabDX = e.clientX - rect.left;
+  pointerDrag.grabDY = e.clientY - rect.top;
+  document.body.appendChild(ghost);
+  moveDragGhost(e);
+}
+
+function moveDragGhost(e) {
+  const ghost = document.querySelector('.drag-ghost');
+  if (!ghost || !pointerDrag) return;
+  ghost.style.left = (e.clientX - pointerDrag.grabDX) + 'px';
+  ghost.style.top = (e.clientY - pointerDrag.grabDY) + 'px';
+}
+
+function clearFeaturedDragState() {
+  featuredList.querySelectorAll('.photo-row').forEach(row => {
+    row.classList.remove('dragging', 'drag-over');
+  });
+  document.querySelector('.drag-ghost')?.remove();
+  pointerDrag = null;
+}
+
+function reorderFeaturedPhotos(dragId, targetId) {
+  if (!dragId || !targetId || dragId === targetId) return;
+
+  const featured = allPhotos.filter(p => p.featured);
+  const fromIdx = featured.findIndex(p => p.id === dragId);
+  const toIdx = featured.findIndex(p => p.id === targetId);
+  if (fromIdx === -1 || toIdx === -1) return;
+
+  const [moved] = featured.splice(fromIdx, 1);
+  featured.splice(toIdx, 0, moved);
+
+  // 重建 allPhotos：精选按新顺序在前，非精选保持原序
+  const nonFeatured = allPhotos.filter(p => !p.featured);
+  allPhotos = [...featured, ...nonFeatured];
+  renderManage();
+
+  const featuredIds = featured.map(p => p.id);
+  reorderPhotos(featuredIds)
+    .then(() => showToast('排序已保存'))
+    .catch(() => {
+      showToast('排序保存失败');
+      loadManage();
+    });
+}
+
 // 跨过 700px 断点时按新列数重新分配卡片（管理列表 + 上传预览）
 window.matchMedia('(max-width: 700px)').addEventListener('change', () => {
   renderManage();
@@ -399,17 +457,13 @@ function createRow(photo, featuredIdx, isFeaturedSection) {
   row.className = 'photo-row' + (isFeaturedSection ? ' featured' : '');
   row.dataset.id = photo.id;
 
-  if (isFeaturedSection) {
-    row.draggable = true;
-  }
-
   const exif = photo.exif || {};
   const exifSummary = [exif.aperture, exif.shutter_speed, exif.iso].filter(Boolean).join(' ');
   const rowUid = 'row-exif-' + photo.id;
 
   row.innerHTML = `
     <span class="order-num">${isFeaturedSection ? featuredIdx + 1 : ''}</span>
-    <img class="thumb" src="${thumbSrc(photo)}" alt="" loading="lazy">
+    <img class="thumb" src="${thumbSrc(photo)}" alt="" loading="lazy" draggable="false">
     <div class="inputs-wrap">
       <input type="text" value="${escapeHtml(photo.title)}" placeholder="标题" data-field="title">
       <input type="text" value="${escapeHtml(photo.location || '')}" placeholder="地点" data-field="location">
@@ -527,38 +581,57 @@ function createRow(photo, featuredIdx, isFeaturedSection) {
     setTimeout(() => document.addEventListener('click', closeDropdown), 0);
   });
 
-  // 拖拽排序（仅精选区）
+  // 拖拽排序（仅精选区）。避开输入框、按钮和 EXIF 面板，避免编辑操作被拖拽拦截。
   if (isFeaturedSection) {
-    row.addEventListener('dragstart', (e) => {
-      row.classList.add('dragging');
-      e.dataTransfer.setData('text/plain', photo.id);
+    row.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0 || e.target.closest('input, button, textarea, select, a, .exif-summary, .exif-edit')) return;
+      pointerDrag = {
+        row,
+        sourceId: photo.id,
+        pointerId: e.pointerId,
+        startX: e.clientX,
+        startY: e.clientY,
+        active: false,
+        targetId: null,
+      };
+      row.setPointerCapture(e.pointerId);
     });
-    row.addEventListener('dragend', () => {
-      row.classList.remove('dragging');
-      featuredList.querySelectorAll('.photo-row').forEach(r => r.classList.remove('drag-over'));
-    });
-    row.addEventListener('dragover', (e) => { e.preventDefault(); row.classList.add('drag-over'); });
-    row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
-    row.addEventListener('drop', (e) => {
+
+    row.addEventListener('pointermove', (e) => {
+      if (!pointerDrag || pointerDrag.pointerId !== e.pointerId) return;
+      const distance = Math.hypot(e.clientX - pointerDrag.startX, e.clientY - pointerDrag.startY);
+      if (!pointerDrag.active && distance < 5) return;
+
+      if (!pointerDrag.active) {
+        pointerDrag.active = true;
+        startDragGhost(pointerDrag.row, e);
+      }
       e.preventDefault();
-      row.classList.remove('drag-over');
-      const dragId = e.dataTransfer.getData('text/plain');
-      if (dragId === photo.id) return;
+      pointerDrag.row.classList.add('dragging');
+      moveDragGhost(e);
 
-      // 重排 allPhotos 中精选照片的顺序
-      const featured = allPhotos.filter(p => p.featured);
-      const fromIdx = featured.findIndex(p => p.id === dragId);
-      const toIdx = featured.findIndex(p => p.id === photo.id);
-      const [moved] = featured.splice(fromIdx, 1);
-      featured.splice(toIdx, 0, moved);
+      featuredList.querySelectorAll('.photo-row').forEach(r => r.classList.remove('drag-over'));
+      const targetRow = document.elementFromPoint(e.clientX, e.clientY)?.closest('.photo-row.featured');
+      if (targetRow && featuredList.contains(targetRow) && targetRow !== pointerDrag.row) {
+        targetRow.classList.add('drag-over');
+        pointerDrag.targetId = targetRow.dataset.id;
+      } else {
+        pointerDrag.targetId = null;
+      }
+    });
 
-      // 重建 allPhotos：精选按新顺序在前，非精选保持原序
-      const nonFeatured = allPhotos.filter(p => !p.featured);
-      allPhotos = [...featured, ...nonFeatured];
-      renderManage();
-      // 自动保存排序
-      const featuredIds = featured.map(p => p.id);
-      reorderPhotos(featuredIds).then(() => showToast('排序已保存')).catch(() => showToast('排序保存失败'));
+    row.addEventListener('pointerup', (e) => {
+      if (!pointerDrag || pointerDrag.pointerId !== e.pointerId) return;
+      const { sourceId, targetId, active } = pointerDrag;
+      if (row.hasPointerCapture(e.pointerId)) row.releasePointerCapture(e.pointerId);
+      clearFeaturedDragState();
+      if (active) reorderFeaturedPhotos(sourceId, targetId);
+    });
+
+    row.addEventListener('pointercancel', (e) => {
+      if (!pointerDrag || pointerDrag.pointerId !== e.pointerId) return;
+      if (row.hasPointerCapture(e.pointerId)) row.releasePointerCapture(e.pointerId);
+      clearFeaturedDragState();
     });
   }
 

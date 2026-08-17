@@ -57,6 +57,36 @@
   color: #fff;
 }
 
+/* ─── macOS：左上角红绿灯（红关/黄最小化/绿最大化），悬停显现符号 ─── */
+#titlebar.is-mac .titlebar-mac-btns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 12px;
+}
+#titlebar.is-mac .titlebar-title { padding-left: 0.9rem; }
+#titlebar.is-mac .titlebar-btn {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  transition: filter 0.15s;
+}
+#titlebar.is-mac .titlebar-btn svg {
+  width: 8px;
+  height: 8px;
+  stroke-width: 1.4;
+  color: rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+#titlebar.is-mac .titlebar-btn:hover svg { opacity: 1; }
+#titlebar.is-mac #titlebar-close { background: #ff5f57; }
+#titlebar.is-mac #titlebar-min { background: #febc2e; }
+#titlebar.is-mac #titlebar-max { background: #28c840; }
+/* 悬停时红绿灯保持自身颜色（上方 id 规则优先级已压过 Windows 侧悬停底色），仅提亮 */
+#titlebar.is-mac .titlebar-btn:hover { filter: brightness(1.12); }
+
 /* ─── 页面内容让位（html.has-titlebar 由 titlebar.js 添加） ─── */
 html.has-titlebar body {
   margin-top: 36px; /* 不动各页自身 padding */
