@@ -4,14 +4,14 @@
 
 **一座装进桌面的私人影像展馆**
 
-*只为照片本身而生 · 稳重克制的展览美学 · Windows 开箱即用*
+*只为照片本身而生 · 稳重克制的展览美学 · Windows / macOS 开箱即用*
 
-**ShiGuang Gallery** — a local-first photography exhibition app for Windows.<br>
+**ShiGuang Gallery** — a local-first photography exhibition app for Windows & macOS.<br>
 Elegant full-screen slideshow, EXIF display & digital signage, built with Tauri + Rust.
 
 [![Release](https://img.shields.io/github/v/release/Pi-SK/shiguang-gallery)](https://github.com/Pi-SK/shiguang-gallery/releases)
 [![License](https://img.shields.io/github/license/Pi-SK/shiguang-gallery)](LICENSE)
-![Platform](https://img.shields.io/badge/platform-Windows-0078d4)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-0078d4)
 ![Tauri](https://img.shields.io/badge/Tauri-2-ffc131)
 
 </div>
@@ -77,13 +77,16 @@ Elegant full-screen slideshow, EXIF display & digital signage, built with Tauri 
 
 ## 安装
 
-前往本仓库的 [**Releases**](https://github.com/Pi-SK/shiguang-gallery/releases) 页面，下载最新的 Windows 安装包：
+前往本仓库的 [**Releases**](https://github.com/Pi-SK/shiguang-gallery/releases) 页面，下载最新的安装包：
 
-```
-ShiGuang-Gallery_2.0.0_x64-setup.exe
-```
+| 平台 | 安装包 |
+|------|--------|
+| Windows | `ShiGuang-Gallery_2.1.0_x64-setup.exe` |
+| macOS | `ShiGuang-Gallery_2.1.0_aarch64.dmg` (Apple Silicon) / `ShiGuang-Gallery_2.1.0_x64.dmg` (Intel) |
 
 双击安装即可。首次启动时选择（或新建）你的照片库目录，也可以先载入内置示例作品集感受一番。
+
+> **macOS 用户注意**：未签名的 .dmg 首次打开会被 Gatekeeper 拦截，请右键 → 打开，或在终端执行 `xattr -cr /Applications/拾光·画廊.app` 清除隔离属性。
 
 ## 从源码构建
 
@@ -92,13 +95,17 @@ ShiGuang-Gallery_2.0.0_x64-setup.exe
 ```powershell
 # 开发调试（debug 构建）
 cargo build --manifest-path src-tauri/Cargo.toml
-./src-tauri/target/debug/photo-gallery.exe
+./src-tauri/target/debug/photo-gallery.exe    # Windows
+./src-tauri/target/debug/photo-gallery        # macOS
 
-# 打包发布（生成 NSIS 安装包）
+# 打包发布（按当前平台自动产出默认安装包）
 npx --yes @tauri-apps/cli@latest build
 ```
 
-安装包产出于 `src-tauri/target/release/bundle/nsis/`。
+| 平台 | 产物路径 |
+|------|----------|
+| Windows | `src-tauri/target/release/bundle/nsis/` (NSIS 安装包) |
+| macOS | `src-tauri/target/release/bundle/dmg/` (.dmg) |
 
 ## 技术剪影
 
