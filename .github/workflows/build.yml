@@ -53,4 +53,14 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: '拾光 · 画廊 ${{ github.ref_name }}'
+          releaseBody: |
+            ## 安装说明
+
+            **Windows**：下载 `.exe` 安装包（NSIS 安装器）
+            **macOS**：下载 `.dmg` 或 `.app.tar.gz`
+
+            > ⚠️ **Edge / SmartScreen 拦截提示**
+            > 因安装包尚未经过 Microsoft 代码签名认证，Edge 浏览器或 Windows SmartScreen 可能会弹出"此应用可能不安全"的拦截提示。
+            > 这属于正常现象，请点击 **"仍要保留"** 或 **"更多信息 → 仍要运行"** 继续安装。
+            > macOS 用户如遇 Gatekeeper 拦截，请右键 `.dmg` → **打开** → **打开**。
           args: --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}

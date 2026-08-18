@@ -48,18 +48,18 @@ if (TAURI) {
   document.documentElement.classList.add('has-titlebar');
 
   /* 最大化状态同步：还原/最大化图标切换 */
-  const btnMax = bar.querySelector('#titlebar-max');
+  const btnMaxEl = bar.querySelector('#titlebar-max');
   async function syncMaxIcon() {
     const maximized = await win.isMaximized();
-    btnMax.innerHTML = maximized
+    btnMaxEl.innerHTML = maximized
       ? '<svg viewBox="0 0 10 10"><rect x="0.5" y="2.5" width="7" height="7"/><path d="M 2.5 2.5 V 0.5 H 9.5 V 7.5 H 7.5"/></svg>'
       : '<svg viewBox="0 0 10 10"><rect x="0.5" y="0.5" width="9" height="9"/></svg>';
-    btnMax.title = maximized ? '还原' : '最大化';
+    btnMaxEl.title = maximized ? '还原' : '最大化';
   }
   syncMaxIcon();
   win.onResized(syncMaxIcon);
 
   bar.querySelector('#titlebar-min').addEventListener('click', () => win.minimize());
-  btnMax.addEventListener('click', () => win.toggleMaximize());
+  btnMaxEl.addEventListener('click', () => win.toggleMaximize());
   bar.querySelector('#titlebar-close').addEventListener('click', () => win.close());
 }
